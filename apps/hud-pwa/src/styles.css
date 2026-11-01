@@ -1,0 +1,29 @@
+:root { font-family: system-ui, sans-serif; color: #f5fff7; background: #050806; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input { font: inherit; }
+button { min-height: 48px; border: 0; border-radius: 12px; padding: 0.7rem 1rem; font-weight: 750; cursor: pointer; }
+button:disabled, input:disabled { cursor: not-allowed; opacity: 0.55; }
+.disclaimer { display: grid; min-height: 100dvh; place-items: center; padding: 1.25rem; background: radial-gradient(circle at 50% 0, #163121, #050806 55%); }
+.disclaimer section { width: min(100%, 34rem); padding: 1.75rem; border: 1px solid #41634a; border-radius: 20px; background: #0b120d; }
+.disclaimer h1 { margin: 0 0 1rem; font-size: clamp(1.8rem, 7vw, 3rem); }
+.disclaimer p { line-height: 1.65; color: #c8d5cb; }
+.disclaimer button { width: 100%; margin-top: 0.75rem; color: #041207; background: #7cff8a; }
+.eyebrow { color: #7cff8a !important; font-weight: 800; }
+.hud-shell { --hud-color: #7cff8a; min-height: 100dvh; display: grid; grid-template-rows: 1fr auto; background: #050806; color: var(--hud-color); }
+.hud { display: grid; align-content: center; justify-items: center; padding: max(2rem, env(safe-area-inset-top)) 1.5rem 2rem; text-shadow: 0 0 9px color-mix(in srgb, var(--hud-color), transparent 25%); }
+.hud.mirrored { transform: scaleX(-1); }
+.hud p { margin: 0; letter-spacing: 0.18em; font-size: 0.8rem; font-weight: 800; }
+.hud output { font-variant-numeric: tabular-nums; line-height: 0.9; }
+.hud span { font-size: clamp(1.2rem, 5vw, 2rem); font-weight: 700; }
+.hud small { margin-top: 1rem; color: #e7f7eb; text-align: center; text-shadow: none; }
+.controls { padding: 1rem max(1rem, env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); border-top: 1px solid #24472d; color: #e7f7eb; background: #0a100b; }
+.controls p { margin: 0 0 0.75rem; line-height: 1.4; }
+.controls div { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; }
+.controls label { display: flex; gap: 0.5rem; align-items: center; }
+.controls input { inline-size: 3rem; block-size: 2.5rem; border: 0; background: transparent; }
+.controls input[type="range"] { inline-size: 7rem; }
+.controls select { min-block-size: 2.5rem; border-radius: 8px; padding: 0.25rem; }
+.controls button { color: #061208; background: var(--hud-color); }
+.retry { min-height: auto; margin-inline-start: 0.5rem; padding: 0.2rem 0.45rem; border: 1px solid currentColor; border-radius: 6px; color: inherit; background: transparent; }
+@media (orientation: landscape) { .hud-shell { grid-template-rows: 1fr auto; } .hud output { font-size: clamp(8rem, 33vh, 22rem); } }

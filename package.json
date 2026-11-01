@@ -1,0 +1,17 @@
+{
+  "name": "mini-apps",
+  "private": true,
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=24.22.0 <25"
+  },
+  "scripts": {
+    "dev:hud": "pnpm --filter @mini-apps/hud-pwa dev",
+    "preview:hud": "pnpm --filter @mini-apps/hud-pwa preview",
+    "dev:cloudflare:hud": "pnpm --filter @mini-apps/hud-pwa dev:cloudflare",
+    "deploy:cloudflare:hud": "pnpm --filter @mini-apps/hud-pwa deploy:cloudflare",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build"
+  }
+}
