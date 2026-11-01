@@ -33,8 +33,24 @@ pnpm.cmd build
 | --- | --- | --- |
 | Vite 개발 서버 | `pnpm.cmd dev:golf` | `http://127.0.0.1:5180` |
 | 프로덕션 빌드 미리보기 | `pnpm.cmd preview:golf` | `http://127.0.0.1:4180` |
+| Cloudflare Workers 로컬 미리보기 | `pnpm.cmd dev:cloudflare:golf` | `http://localhost:8788`; `workerd` 설치 스크립트 승인 전 미검증 |
+| Cloudflare 직접 배포 | `pnpm.cmd deploy:cloudflare:golf` | 사용자 승인·계정 인증 후에만 실행 |
 
 Golf MVP는 클럽 선택·카메라 권한/영상 준비와 표준 환경 런치 계산 엔진을 포함한다. 실제 영상에서 클럽 헤드·볼 측정값을 자동 추출하는 모델은 구현 전이므로, 아직 수치 결과를 표시하지 않는다.
+
+Golf는 HUD와 별도 Cloudflare Worker(`mini-apps-golf`)로 배포한다. GitHub `main` 자동 배포 연결 시 대시보드에서 다음 값을 사용한다.
+
+```text
+Project name: mini-apps-golf
+Production branch: main
+Root directory: /
+Build command: pnpm --filter @mini-apps/golf-pwa build
+Deploy command: pnpm --filter @mini-apps/golf-pwa exec wrangler deploy --config wrangler.jsonc
+Preview command: pnpm --filter @mini-apps/golf-pwa exec wrangler preview --config wrangler.jsonc
+Build watch include paths: apps/golf-pwa/*, package.json, pnpm-lock.yaml, pnpm-workspace.yaml
+```
+
+대시보드 Worker 이름은 `apps/golf-pwa/wrangler.jsonc`의 `name`과 같아야 한다. 같은 저장소에 연결된 Worker는 각자의 watch path에 포함된 변경에서만 빌드하도록 설정한다.
 
 ## GitHub 및 Cloudflare 자동 배포
 

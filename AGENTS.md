@@ -11,7 +11,7 @@
 | 플랫폼 순서 | 각 앱은 PWA → 토스 미니앱 → Android/iOS 하이브리드 순서로 개발한다. |
 | 플랫폼 상태 | HUD PWA 구현 진행, Golf PWA는 런치 분석 MVP 기반 구현 대상. 토스·Android·iOS 앱은 미착수이며 준비 폴더도 만들지 않는다. |
 | 데이터·인증 | 현재 로컬 브라우저 설정과 위치 정보만 사용한다. Supabase는 계정 동기화·원격 데이터가 확정될 때 검토한다. |
-| 호스팅·서버 | HUD PWA는 Cloudflare Workers Static Assets로 배포한다. Cloudflare Workers Builds가 GitHub `minotree/mini-app`의 `main`을 자동 배포하도록 연결됐다. 커스텀 도메인·Worker 런타임 코드·원격 데이터는 미연결이다. Vercel·지도는 필요가 확정될 때만 추가한다. |
+| 호스팅·서버 | HUD PWA는 Cloudflare Workers Static Assets로 GitHub `main` 자동 배포가 연결됐다. Golf PWA도 별도 Static Assets Worker 설정을 준비했으며 GitHub 연결·배포는 미완료다. 커스텀 도메인·Worker 런타임 코드·원격 데이터는 미연결이다. Vercel·지도는 필요가 확정될 때만 추가한다. |
 | Node / pnpm | Node 24.22.0, pnpm 10.34.7 확인. 루트 `engines`와 `packageManager`에 기록한다. |
 | 배포·출시 | 담당자 미정. 커밋·푸시·배포·Supabase/Cloudflare 계정 생성은 명시 승인 후 진행한다. |
 | 문서 | HUD 기획: `docs/planning/hud-app-specifications-v3.md`; 구조: `docs/architecture.md`; 개발·Git 명령: `docs/development.md`; 진행: `progress.md` |
@@ -39,6 +39,8 @@
 - Golf 개발: `pnpm.cmd dev:golf` (`http://127.0.0.1:5180`)
 - Cloudflare 로컬 미리보기: `pnpm.cmd dev:cloudflare:hud` (`http://localhost:8787`)
 - Cloudflare 배포(명시 승인 후): `pnpm.cmd deploy:cloudflare:hud`
+- Golf Cloudflare 로컬 미리보기: `pnpm.cmd dev:cloudflare:golf` (`http://localhost:8788`)
+- Golf Cloudflare 배포(명시 승인 후): `pnpm.cmd deploy:cloudflare:golf`
 - 타입 검사: `pnpm.cmd typecheck`
 - 빌드: `pnpm.cmd build`
 - 설치/서비스 워커·실기기 GPS·화면 회전·토스·Android·iOS 검증은 자동 검사와 구분해 `progress.md`에 기록한다.

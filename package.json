@@ -12,6 +12,8 @@
     "preview:golf": "pnpm --filter @mini-apps/golf-pwa preview",
     "dev:cloudflare:hud": "pnpm --filter @mini-apps/hud-pwa dev:cloudflare",
     "deploy:cloudflare:hud": "pnpm --filter @mini-apps/hud-pwa deploy:cloudflare",
+    "dev:cloudflare:golf": "pnpm --filter @mini-apps/golf-pwa dev:cloudflare",
+    "deploy:cloudflare:golf": "pnpm --filter @mini-apps/golf-pwa deploy:cloudflare",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "build": "pnpm -r build"

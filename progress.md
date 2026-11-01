@@ -1,5 +1,14 @@
 # mini-apps 구현 진행표
 
+## Golf PWA Cloudflare 배포 설정 준비 (2026-11-01)
+
+- 요청/문제: Golf PWA도 GitHub push를 통해 Cloudflare에 별도 배포.
+- 변경: Golf PWA의 Workers Static Assets 설정(`wrangler.jsonc`)과 Cloudflare 로컬 미리보기·직접 배포 스크립트를 추가. GitHub Workers Builds에서 사용할 루트/빌드/배포/preview 명령과 monorepo watch path를 개발 명령 문서에 기록.
+- 검증: Golf 테스트 4개·typecheck·PWA build 통과. `wrangler deploy --config wrangler.jsonc --dry-run`으로 정적 자산 8개를 읽는 설정을 검증. Cloudflare 계정 연결·실제 업로드·배포 없음.
+- 사용자 확인: Cloudflare에서 `mini-apps-golf` Worker 생성, GitHub 저장소 연결, `main` 자동 배포와 watch path 설정 대기.
+- 적용: 로컬 배포 설정만 추가. Golf Worker·도메인·Cloudflare 계정 상태 변경 없음.
+- 남은 작업: 변경 사항을 GitHub `main`에 push한 뒤 Cloudflare 대시보드에서 GitHub 연결, 첫 production 배포와 공개 URL 확인.
+
 ## Golf 테스트용 준비 음성 안내 (2026-11-01)
 
 - 요청/문제: 사용자 테스트를 위해 카메라 배치와 스윙 시작을 음성으로 안내.
