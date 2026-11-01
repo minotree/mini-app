@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_HUD_SETTINGS, loadHudSettings, smoothSpeed, speedKmhFromMetersPerSecond } from './hud';
+import { DEFAULT_HUD_SETTINGS, isDriveSafetyLocked, loadHudSettings, smoothSpeed, speedKmhFromMetersPerSecond } from './hud';
 
 describe('speedKmhFromMetersPerSecond', () => {
   it('converts speed and cuts off low speed', () => {
@@ -16,10 +16,17 @@ describe('smoothSpeed', () => {
   });
 });
 
+describe('isDriveSafetyLocked', () => {
+  it('locks settings at 10km/h or faster', () => {
+    expect(isDriveSafetyLocked(9)).toBe(false);
+    expect(isDriveSafetyLocked(10)).toBe(true);
+  });
+});
+
 describe('loadHudSettings', () => {
   it('keeps only safe persisted display settings', () => {
-    expect(loadHudSettings('{"color":"#00FFFF","fontScale":1.2,"fontWeight":700,"mirror":true}')).toEqual({
-      color: '#00FFFF', fontScale: 1.2, fontWeight: 700, mirror: true
+    expect(loadHudSettings('{"color":"#00FFFF","fontScale":1.2,"fontWeight":700,"mirror":true,"rotate180":false}')).toEqual({
+      color: '#00FFFF', fontScale: 1.2, fontWeight: 700, mirror: true, rotate180: false
     });
     expect(loadHudSettings('{"color":"red","fontScale":9}')).toEqual(DEFAULT_HUD_SETTINGS);
     expect(loadHudSettings('{broken')).toEqual(DEFAULT_HUD_SETTINGS);

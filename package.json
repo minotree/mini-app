@@ -8,6 +8,8 @@
   "scripts": {
     "dev:hud": "pnpm --filter @mini-apps/hud-pwa dev",
     "preview:hud": "pnpm --filter @mini-apps/hud-pwa preview",
+    "dev:golf": "pnpm --filter @mini-apps/golf-pwa dev",
+    "preview:golf": "pnpm --filter @mini-apps/golf-pwa preview",
     "dev:cloudflare:hud": "pnpm --filter @mini-apps/hud-pwa dev:cloudflare",
     "deploy:cloudflare:hud": "pnpm --filter @mini-apps/hud-pwa deploy:cloudflare",
     "typecheck": "pnpm -r typecheck",

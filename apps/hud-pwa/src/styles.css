@@ -10,13 +10,15 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.55; }
 .disclaimer p { line-height: 1.65; color: #c8d5cb; }
 .disclaimer button { width: 100%; margin-top: 0.75rem; color: #041207; background: #7cff8a; }
 .eyebrow { color: #7cff8a !important; font-weight: 800; }
-.hud-shell { --hud-color: #7cff8a; min-height: 100dvh; display: grid; grid-template-rows: 1fr auto; background: #050806; color: var(--hud-color); }
-.hud { display: grid; align-content: center; justify-items: center; padding: max(2rem, env(safe-area-inset-top)) 1.5rem 2rem; text-shadow: 0 0 9px color-mix(in srgb, var(--hud-color), transparent 25%); }
-.hud.mirrored { transform: scaleX(-1); }
+.hud-shell { --hud-color: #7cff8a; --hud-font-scale: 1; height: 100dvh; display: grid; grid-template-rows: minmax(0, 1fr) auto; overflow: hidden; background: #050806; color: var(--hud-color); }
+.hud-shell.driving { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.hud-shell.driving .hud { grid-column: 1; grid-row: 1; }
+.hud { min-block-size: 0; display: grid; align-content: center; justify-items: center; padding: max(2rem, env(safe-area-inset-top)) 1.5rem 2rem; overflow: hidden; text-shadow: 0 0 9px color-mix(in srgb, var(--hud-color), transparent 25%); }
 .hud p { margin: 0; letter-spacing: 0.18em; font-size: 0.8rem; font-weight: 800; }
-.hud output { font-variant-numeric: tabular-nums; line-height: 0.9; }
+.hud output { font-variant-numeric: tabular-nums; font-size: clamp(7rem, 42vw, 20rem); line-height: 0.9; transform: scale(var(--hud-font-scale)); }
 .hud span { font-size: clamp(1.2rem, 5vw, 2rem); font-weight: 700; }
 .hud small { margin-top: 1rem; color: #e7f7eb; text-align: center; text-shadow: none; }
+.hud .driving-status { color: #ffd76c; }
 .controls { padding: 1rem max(1rem, env(safe-area-inset-right)) calc(1rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); border-top: 1px solid #24472d; color: #e7f7eb; background: #0a100b; }
 .controls p { margin: 0 0 0.75rem; line-height: 1.4; }
 .controls div { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; }
@@ -26,4 +28,19 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.55; }
 .controls select { min-block-size: 2.5rem; border-radius: 8px; padding: 0.25rem; }
 .controls button { color: #061208; background: var(--hud-color); }
 .retry { min-height: auto; margin-inline-start: 0.5rem; padding: 0.2rem 0.45rem; border: 1px solid currentColor; border-radius: 6px; color: inherit; background: transparent; }
-@media (orientation: landscape) { .hud-shell { grid-template-rows: 1fr auto; } .hud output { font-size: clamp(8rem, 33vh, 22rem); } }
+@media (orientation: landscape) {
+  .hud output { font-size: clamp(5rem, 30vh, 11rem); }
+  .hud { padding-block: max(0.6rem, env(safe-area-inset-top)) 0.6rem; }
+  .controls { padding-block: 0.5rem calc(0.5rem + env(safe-area-inset-bottom)); }
+  .controls p { margin-bottom: 0.4rem; }
+  .controls button { min-height: 40px; padding: 0.45rem 0.7rem; }
+}
+
+@media (orientation: landscape) and (min-width: 560px) {
+  .hud-shell:not(.driving) { grid-template-columns: minmax(0, 1fr) minmax(11.5rem, 28vw); grid-template-rows: 1fr; }
+  .hud-shell:not(.driving) .hud { grid-column: 1; grid-row: 1; }
+  .hud-shell:not(.driving) .controls { grid-column: 2; grid-row: 1; overflow-y: auto; border-top: 0; border-left: 1px solid #24472d; }
+  .hud-shell:not(.driving) .controls div { display: grid; grid-template-columns: 1fr; justify-items: stretch; }
+  .hud-shell:not(.driving) .controls label { justify-content: space-between; }
+  .hud-shell:not(.driving) .controls input[type="range"] { inline-size: min(100%, 8rem); }
+}

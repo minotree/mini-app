@@ -21,13 +21,13 @@ pnpm.cmd preview:hud
 
 ## Cloudflare Workers 배포 준비
 
-HUD PWA는 Cloudflare Workers Static Assets로 `apps/hud-pwa/dist`를 배포하도록 구성했다. Cloudflare 계정 로그인, Worker 이름·도메인 결정, 실제 업로드는 아직 하지 않았다.
+HUD PWA는 Cloudflare Workers Static Assets로 `apps/hud-pwa/dist`를 배포한다. GitHub `main` 브랜치가 Cloudflare Workers Builds에 연결되어 있으므로, `main`에 push하면 Cloudflare가 자동 빌드·배포한다. 커스텀 도메인 연결은 아직 하지 않았다.
 
 ```powershell
 # Cloudflare Workers 런타임으로 로컬 미리보기
 pnpm.cmd dev:cloudflare:hud
 
-# Cloudflare 인증·배포 대상 확인 후에만 실행
+# Git 연동과 별도로 직접 배포할 때만 사용
 pnpm.cmd deploy:cloudflare:hud
 ```
 
@@ -35,7 +35,9 @@ pnpm.cmd deploy:cloudflare:hud
 
 ## 안전 및 개인정보
 
-HUD는 참고용 화면일 뿐 운전 보조 장치가 아니다. 운전 중 조작하지 말고, 기기는 시야·에어백·차량 조작을 방해하지 않도록 안전하게 고정해야 한다. 위치 정보는 현재 브라우저 세션에서 속도 표시를 위해서만 사용하며 서버로 보내지 않는다.
+HUD는 참고용 화면일 뿐 운전 보조 장치가 아니다. 운전 중 조작하지 말고, 기기는 시야·에어백·차량 조작을 방해하지 않도록 안전하게 고정해야 한다. 화면을 위로 두고 스마트폰의 물리적 상단이 운전자 쪽을 향하게 배치하면 HUD의 기본 180도 표시 보정을 사용하고 반사 모드를 별도로 켠다. 정차 상태에서 전면 유리의 글자 방향이 바르게 읽히는지 확인한다. 속도가 10km/h 이상이면 설정 메뉴를 자동으로 숨긴다. 이 방향은 GPS 수신 품질을 보장하지 않으며, 위치 정보는 현재 브라우저 세션에서 속도 표시를 위해서만 사용하고 서버로 보내지 않는다.
 
 PWA 설치, 서비스 워커 갱신, 실제 기기 GPS, 화면 회전, 토스 및 네이티브 앱 검증은 아직 완료되지 않았다. 상세 결정과 진행 상태는 [AGENTS.md](AGENTS.md), [progress.md](progress.md)를 참고한다.
+
+실행·검사·Git·Cloudflare 자동 배포 명령은 [docs/development.md](docs/development.md)에 정리한다.
 
