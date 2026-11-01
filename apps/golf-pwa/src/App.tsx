@@ -25,6 +25,20 @@ export function App() {
 
   useEffect(() => () => streamRef.current?.getTracks().forEach((track) => track.stop()), []);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (cameraState !== 'ready' || !video || !stream) return;
+
+    video.srcObject = stream;
+    void video.play().catch(() => {
+      stream.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      setCameraError('카메라 영상 재생을 시작하지 못했습니다. 다시 시도해 주세요.');
+      setCameraState('error');
+    });
+  }, [cameraState]);
+
   useEffect(() => () => window.speechSynthesis?.cancel(), []);
 
   const announcePreparation = () => {
@@ -52,10 +66,6 @@ export function App() {
       });
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
       setCameraState('ready');
       announcePreparation();
     } catch {

@@ -1,5 +1,13 @@
 # mini-apps 구현 진행표
 
+## Golf 카메라 미리보기 연결 수정 (2026-11-01)
+
+- 요청/문제: 배포된 Golf PWA에서 카메라 권한 요청 후 미리보기가 켜지지 않음.
+- 원인: 카메라 스트림을 얻는 시점에는 조건부 렌더링된 `video` 요소가 아직 생성되지 않아 스트림을 연결하지 못함.
+- 변경: 카메라 준비 상태가 된 뒤 생성된 `video` 요소에 스트림을 연결하고 재생하도록 effect를 추가. 재생 실패 시 스트림을 정리하고 재시도 가능한 오류를 표시.
+- 검증: `pnpm.cmd --filter @mini-apps/golf-pwa test`, `typecheck`, `build`, `git diff --check` 통과.
+- 남은 작업: 이 수정 사항을 GitHub `main`에 push해 Cloudflare 자동 배포 후 실제 기기에서 카메라 권한·미리보기 확인.
+
 ## Golf PWA Cloudflare 배포 설정 준비 (2026-11-01)
 
 - 요청/문제: Golf PWA도 GitHub push를 통해 Cloudflare에 별도 배포.
