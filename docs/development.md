@@ -61,7 +61,7 @@ Build watch include paths: apps/golf-pwa/*, package.json, pnpm-lock.yaml, pnpm-w
 | Cloudflare Workers 로컬 미리보기 | `pnpm.cmd dev:cloudflare:metronome` | `http://localhost:8789`; 실제 workerd 실행은 미검증 |
 | Cloudflare 직접 배포 | `pnpm.cmd deploy:cloudflare:metronome` | 사용자 승인·계정 인증 후에만 실행 |
 
-기본 MVP는 실제 메트로놈 추 애니메이션, 러닝·사이클 템포 프리셋, Web Audio 합성 비트와 선택형 진동을 제공한다. 워밍업·인터벌·응원 MP3는 아직 구현하지 않았다.
+기본 MVP는 실제 메트로놈 추 애니메이션, 러닝·사이클 템포 프리셋, Web Audio 합성 비트와 선택형 진동을 제공한다. 재생 중에는 Screen Wake Lock을 요청해 화면 자동 꺼짐·어두워짐을 막고, 일시정지·초기화·운동 종료 시 해제한다. 시스템이 저전력·권한·브라우저 정책으로 잠금을 해제하거나 요청을 거부할 수 있어 화면에 상태를 표시한다. 활성 재생의 소리는 Web Audio로 20초 선행 예약하고 Media Session의 재생·일시정지 제어를 등록한다. 이는 화면 잠금·백그라운드 전환에서의 연속성을 높이기 위한 처리이며 OS·브라우저의 오디오 중단 또는 앱 종료를 막지는 못하므로 Android·iOS 실기기에서 별도 확인한다. 워밍업·인터벌·응원 MP3는 아직 구현하지 않았다.
 
 메트로놈은 HUD·Golf와 별도 Cloudflare Worker(`mini-apps-workout-metronome`)로 배포하도록 준비했다. GitHub Workers Builds 연결 시 다음 값을 사용한다.
 

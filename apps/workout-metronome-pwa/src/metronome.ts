@@ -14,7 +14,7 @@ export type MetronomeSettings = {
   tempo: number;
   soundEnabled: boolean;
   vibrationEnabled: boolean;
-  beatGroup: 2 | 3 | 4;
+  beatGroup: 0 | 2 | 3 | 4;
   countInEnabled: boolean;
   durationSeconds: number;
 };
@@ -34,7 +34,7 @@ export const clampDurationSeconds = (seconds: number): number => Math.min(DURATI
 export const beatIntervalMs = (tempo: number): number => 60_000 / clampTempo(tempo);
 // 메트로놈은 매 박자마다 반대쪽 끝에 도달한다. CSS alternate 애니메이션의 duration은 한쪽 끝 사이 이동 시간이다.
 export const swingDurationMs = (tempo: number): number => beatIntervalMs(tempo);
-export const isAccentBeat = (beat: number, beatGroup: MetronomeSettings['beatGroup']): boolean => (beat - 1) % beatGroup === 0;
+export const isAccentBeat = (beat: number, beatGroup: MetronomeSettings['beatGroup']): boolean => beatGroup !== 0 && (beat - 1) % beatGroup === 0;
 
 export const loadSettings = (raw: string | null): MetronomeSettings => {
   if (!raw) return DEFAULT_SETTINGS;
@@ -47,7 +47,7 @@ export const loadSettings = (raw: string | null): MetronomeSettings => {
       tempo: typeof value.tempo === 'number' ? clampTempo(value.tempo) : DEFAULT_SETTINGS.tempo,
       soundEnabled: typeof value.soundEnabled === 'boolean' ? value.soundEnabled : DEFAULT_SETTINGS.soundEnabled,
       vibrationEnabled: typeof value.vibrationEnabled === 'boolean' ? value.vibrationEnabled : DEFAULT_SETTINGS.vibrationEnabled,
-      beatGroup: value.beatGroup === 2 || value.beatGroup === 3 || value.beatGroup === 4 ? value.beatGroup : DEFAULT_SETTINGS.beatGroup,
+      beatGroup: value.beatGroup === 0 || value.beatGroup === 2 || value.beatGroup === 3 || value.beatGroup === 4 ? value.beatGroup : DEFAULT_SETTINGS.beatGroup,
       countInEnabled: typeof value.countInEnabled === 'boolean' ? value.countInEnabled : DEFAULT_SETTINGS.countInEnabled,
       durationSeconds: typeof value.durationSeconds === 'number' ? clampDurationSeconds(value.durationSeconds) : DEFAULT_SETTINGS.durationSeconds
     };

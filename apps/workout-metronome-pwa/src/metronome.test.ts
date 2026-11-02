@@ -18,6 +18,7 @@ describe('metronome settings', () => {
     expect(isAccentBeat(1, 4)).toBe(true);
     expect(isAccentBeat(4, 4)).toBe(false);
     expect(isAccentBeat(5, 4)).toBe(true);
+    expect(isAccentBeat(1, 0)).toBe(false);
   });
 
   it('loads only valid persisted settings', () => {

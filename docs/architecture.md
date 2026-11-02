@@ -10,6 +10,12 @@ HUD는 PWA 단계에서 브라우저 Geolocation API만 사용한다. 지도, �
 
 HUD PWA의 Vite 빌드 결과 `apps/hud-pwa/dist`는 `wrangler.jsonc`의 Workers Static Assets로 제공한다. 이는 별도 Worker 런타임 코드나 저장소를 추가하지 않고 정적 PWA를 배포하기 위한 선택이다. SPA fallback을 명시해 향후 클라이언트 라우트를 새로고침해도 `index.html`을 제공할 수 있게 한다. 계정 인증, Worker 생성, 도메인 연결, `wrangler deploy`는 사용자 명시 승인 후에만 수행한다.
 
+## 2026-11-02 — PWA의 기본 배포 경로
+
+모든 PWA는 별도 Cloudflare Workers Static Assets Worker를 기본 배포 경로로 사용한다. 각 앱은 자기 `dist`만 제공하는 `wrangler.jsonc`와 고유 Worker 이름을 소유하고, GitHub `main` push에 연결된 Workers Builds가 앱별 빌드·배포를 수행한다. Worker 런타임 코드, 원격 데이터, 커스텀 도메인과 비밀값은 필요가 확정될 때만 추가한다.
+
+새 Worker 이름은 `workers.dev` 기본 URL을 짧게 유지하도록 앱의 짧은 영문 슬러그를 우선 사용한다. 예를 들어 `metronome` Worker는 `metronome.<account>.workers.dev` 형식의 주소를 사용한다.
+
 ## 2026-11-01 — HUD 기본 거치 방향
 
 현재 HUD PWA는 화면을 위로 두고 스마트폰의 물리적 상단이 운전자 쪽을 향하는 거치를 기본 안내로 사용한다. 시스템이 180도 가로 회전을 제공하지 않는 기기에서도 이 거치 방향을 지원하도록 HUD 표시 자체에 기본 180도 보정을 둔다. 180도 보정과 좌우 반사 모드는 별개의 변환이며, 정차 중 반사 결과를 보고 각각 조정한다. 스마트폰의 GNSS 안테나 위치·수신 방향은 기종별로 다르므로 이 방향을 GPS 정확도 보장으로 표현하지 않는다.
