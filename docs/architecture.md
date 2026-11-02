@@ -20,3 +20,13 @@ HUD PWA의 Vite 빌드 결과 `apps/hud-pwa/dist`는 `wrangler.jsonc`의 Workers
 
 메뉴가 숨겨진 주행 상태에서는 방향·직전 메뉴 위치와 무관하게 HUD가 전체 가용 화면의 중앙을 사용한다.
 
+## 2026-11-02 — 운동 메트로놈 PWA의 로컬 리듬 처리
+
+`apps/workout-metronome-pwa`는 독립 React/Vite PWA로 구현한다. BPM 계산·설정 검증·로컬 저장은 앱 안에 두며, 외부 데이터·인증·서버는 사용하지 않는다. 기본 시각 피드백은 CSS로 구현한 메트로놈 추의 왕복 움직임이고, 소리는 Web Audio API로 합성한 짧은 비트여서 별도 음원 자산을 필요로 하지 않는다. 진동은 Vibration API 지원 기기에서만 선택적으로 수행한다.
+
+정밀 백그라운드 재생, 사용자 문구 음성화, 사전 생성 응원 MP3 및 Cloudflare 정적 배포는 별도 요구사항이 확정될 때 추가한다.
+
+## 2026-11-02 — 운동 메트로놈 Cloudflare Static Assets 배포 준비
+
+메트로놈 PWA의 `dist`는 `apps/workout-metronome-pwa/wrangler.jsonc`의 Workers Static Assets로 제공하도록 준비했다. SPA fallback을 설정했으며 별도 Worker 런타임 코드·비밀값·원격 데이터는 추가하지 않는다. `mini-apps-workout-metronome` Worker의 생성, 계정 인증, GitHub Workers Builds 연결과 실제 배포는 사용자 승인 후에만 수행한다.
+

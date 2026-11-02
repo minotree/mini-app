@@ -52,6 +52,31 @@ Build watch include paths: apps/golf-pwa/*, package.json, pnpm-lock.yaml, pnpm-w
 
 대시보드 Worker 이름은 `apps/golf-pwa/wrangler.jsonc`의 `name`과 같아야 한다. 같은 저장소에 연결된 Worker는 각자의 watch path에 포함된 변경에서만 빌드하도록 설정한다.
 
+## 운동 메트로놈 PWA
+
+| 목적 | 명령 | 주소 / 상태 |
+| --- | --- | --- |
+| Vite 개발 서버 | `pnpm.cmd dev:metronome` | `http://127.0.0.1:5181` |
+| 프로덕션 빌드 미리보기 | `pnpm.cmd preview:metronome` | `http://127.0.0.1:4181` |
+| Cloudflare Workers 로컬 미리보기 | `pnpm.cmd dev:cloudflare:metronome` | `http://localhost:8789`; 실제 workerd 실행은 미검증 |
+| Cloudflare 직접 배포 | `pnpm.cmd deploy:cloudflare:metronome` | 사용자 승인·계정 인증 후에만 실행 |
+
+기본 MVP는 실제 메트로놈 추 애니메이션, 러닝·사이클 템포 프리셋, Web Audio 합성 비트와 선택형 진동을 제공한다. 워밍업·인터벌·응원 MP3는 아직 구현하지 않았다.
+
+메트로놈은 HUD·Golf와 별도 Cloudflare Worker(`mini-apps-workout-metronome`)로 배포하도록 준비했다. GitHub Workers Builds 연결 시 다음 값을 사용한다.
+
+```text
+Project name: mini-apps-workout-metronome
+Production branch: main
+Root directory: /
+Build command: pnpm --filter @mini-apps/workout-metronome-pwa build
+Deploy command: pnpm --filter @mini-apps/workout-metronome-pwa exec wrangler deploy --config wrangler.jsonc
+Preview command: pnpm --filter @mini-apps/workout-metronome-pwa exec wrangler preview --config wrangler.jsonc
+Build watch include paths: apps/workout-metronome-pwa/*, package.json, pnpm-lock.yaml, pnpm-workspace.yaml
+```
+
+대시보드 Worker 이름은 `apps/workout-metronome-pwa/wrangler.jsonc`의 `name`과 같아야 한다. Cloudflare 계정 연결, Worker 생성, GitHub 연결과 배포는 아직 하지 않았다.
+
 ## GitHub 및 Cloudflare 자동 배포
 
 현재 원격은 `origin`의 `https://github.com/minotree/mini-app.git`, 배포 브랜치는 `main`이다. Cloudflare Workers Builds가 이 저장소의 `main`에 연결되어 있으므로, `main`에 push하면 Cloudflare가 빌드·배포한다. `main` push는 production 배포를 유발하므로, 변경 내용을 검사한 뒤에만 실행한다.
@@ -87,7 +112,7 @@ Cloudflare Workers Builds 설정값은 다음을 사용한다. 대시보드 Work
 ## 새 앱 또는 서버 추가 시
 
 1. 앱 이름과 플랫폼을 확정하고 `apps/<이름>-pwa` 또는 해당 플랫폼 패키지를 만든다.
-2. 포트가 필요한 서버는 기존 포트(5173 HUD Vite, 4173 HUD preview, 8787 Cloudflare local preview)와 충돌하지 않게 정한다.
+2. 포트가 필요한 서버는 기존 포트(5173 HUD Vite, 4173 HUD preview, 5180 Golf Vite, 4180 Golf preview, 5181 메트로놈 Vite, 4181 메트로놈 preview, 8787 HUD·8788 Golf·8789 메트로놈 Cloudflare local preview)와 충돌하지 않게 정한다.
 3. 루트 `package.json`에 `dev:<앱>`처럼 대상을 드러내는 스크립트를 추가한다.
 4. 이 문서의 표에 실행·미리보기·검사·배포 명령과 포트·검증 상태를 추가한다.
 5. `AGENTS.md`와 `progress.md`에 플랫폼 상태·서비스 책임·실제 검증 결과를 기록한다.

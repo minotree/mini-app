@@ -2,13 +2,14 @@
 
 작은 단일 목적 앱을 pnpm workspace로 관리한다. 앱마다 PWA를 먼저 만들고, 필요가 확정되면 토스 미니앱과 Capacitor 기반 Android/iOS 하이브리드 앱을 독립 구현한다.
 
-현재 첫 앱은 `apps/hud-pwa`의 스마트폰 HUD PWA다. 위치 권한을 허용하면 GPS 기반 속도를 표시하며, 실제 제한속도·단속 카메라 정보는 아직 연결하지 않는다.
+현재 앱은 `apps/hud-pwa`의 스마트폰 HUD PWA, `apps/golf-pwa`의 런치 분석 MVP, `apps/workout-metronome-pwa`의 운동용 메트로놈 PWA다. 메트로놈은 러닝·사이클 템포 프리셋과 실제 추 움직임 기반 시각 피드백을 제공한다.
 
 ## 시작
 
 ```powershell
 pnpm.cmd install
 pnpm.cmd dev:hud
+pnpm.cmd dev:metronome
 ```
 
 개발 서버는 `http://127.0.0.1:5173`에서 열린다.
@@ -17,6 +18,7 @@ pnpm.cmd dev:hud
 pnpm.cmd typecheck
 pnpm.cmd build
 pnpm.cmd preview:hud
+pnpm.cmd preview:metronome
 ```
 
 ## Cloudflare Workers 배포 준비
@@ -32,6 +34,8 @@ pnpm.cmd deploy:cloudflare:hud
 ```
 
 `wrangler.jsonc`의 `name`을 배포 전 계정에서 사용할 Worker 이름으로 확인한다. 환경 변수·비밀값은 현재 필요하지 않으며, 필요해질 경우 `.env`나 클라이언트 번들에 넣지 않고 Cloudflare Secrets로 관리한다.
+
+Golf와 운동 메트로놈도 각각 `mini-apps-golf`, `mini-apps-workout-metronome` 이름의 Static Assets Worker 설정을 준비했지만, GitHub 연결·배포는 아직 하지 않았다. 메트로놈의 로컬 Cloudflare 미리보기와 승인 후 직접 배포 명령은 `pnpm.cmd dev:cloudflare:metronome`, `pnpm.cmd deploy:cloudflare:metronome`이다.
 
 ## 안전 및 개인정보
 
