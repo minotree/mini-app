@@ -8,9 +8,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: '운동 메트로놈',
-        short_name: '메트로놈',
-        description: '러닝과 사이클의 리듬을 맞추는 운동용 메트로놈',
+        name: '모두의 비트',
+        short_name: '모두의 비트',
+        lang: 'ko',
+        description: '실내·실외 운동 리듬을 맞추는 메트로놈',
         display: 'standalone',
         background_color: '#10131b',
         theme_color: '#10131b'
