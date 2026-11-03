@@ -7,6 +7,16 @@ type ScreenLockState = 'active' | 'unavailable' | 'off';
 type AppView = 'home' | 'session' | 'complete';
 type LocationState = 'waiting' | 'ready' | 'unavailable' | 'denied' | 'error';
 
+const usePlaybackAudioSession = () => {
+  const audioSession = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+  if (!audioSession) return;
+  try {
+    audioSession.type = 'playback';
+  } catch {
+    // 지원하지 않는 환경에서는 기존 Web Audio 재생을 유지한다.
+  }
+};
+
 const scheduleTick = (context: AudioContext, at: number, accent: boolean, sound: BeatSound, scheduled: Set<OscillatorNode>) => {
   const oscillator = context.createOscillator();
   const gain = context.createGain();
@@ -450,6 +460,7 @@ export function App() {
     const generation = ++startGeneration.current;
     void requestScreenWakeLock();
     if (settings.soundEnabled) {
+      usePlaybackAudioSession();
       audioContext.current ??= new AudioContext();
       try {
         await audioContext.current.resume();
@@ -527,7 +538,7 @@ export function App() {
     <span className="arm"><span className="weight" /></span>
   </div>;
 
-  return <main className="app-shell">
+  return <main className={`app-shell ${view}-view`}>
     <header className="app-header">
       <h1>모두의 비트</h1>
       {view === 'session' && <button type="button" className="settings-link" onClick={openHome} aria-label="운동 일시정지하고 설정 열기">⚙ 설정</button>}

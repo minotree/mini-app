@@ -4,7 +4,7 @@ body { margin: 0; min-width: 320px; background: radial-gradient(circle at 50% 0,
 button, input { font: inherit; }
 button { min-height: 44px; border: 0; border-radius: 12px; padding: .65rem .9rem; color: inherit; background: #252b3a; font-weight: 750; cursor: pointer; }
 button.selected { color: #10131b; background: #b7f1ff; }
-.app-shell { width: min(100%, 44rem); min-height: 100dvh; margin: auto; padding: max(1.5rem, env(safe-area-inset-top)) 1.25rem calc(1.5rem + env(safe-area-inset-bottom)); }
+.app-shell { width: min(100%, 44rem); min-height: 100vh; min-height: 100dvh; margin: auto; padding: max(1.5rem, env(safe-area-inset-top)) 1.25rem calc(1.5rem + env(safe-area-inset-bottom)); }
 header { text-align: center; } h1 { margin: .2rem 0; font-size: clamp(2rem, 8vw, 3rem); } .eyebrow { margin: 0; color: #b7f1ff; letter-spacing: .15em; font-size: .75rem; font-weight: 800; } .subtle, .notice { color: #bec5d4; line-height: 1.55; }
 .metronome-card { display: grid; justify-items: center; margin: 1.5rem 0; padding: 1.5rem; border: 1px solid #46536e; border-radius: 24px; background: rgb(17 22 33 / .8); box-shadow: 0 18px 50px rgb(0 0 0 / .22); }
 .pendulum { position: relative; width: 11rem; height: 14rem; transform-origin: 50% 1.1rem; } .pendulum.playing { animation: swing var(--swing-duration) ease-in-out infinite alternate; }
@@ -24,9 +24,9 @@ output { margin-top: -.25rem; font-size: clamp(4rem, 18vw, 6.5rem); font-weight:
 .session-actions > span > button { min-width: 0; }
 .session-actions { width: min(100%, 28rem); grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; }
 .session-actions > span > button { padding: .55rem .35rem; font-size: .95rem; white-space: nowrap; }
-.session-actions .help-button { width: 1.75rem; height: 1.75rem; min-width: 1.75rem; min-height: 1.75rem; flex: 0 0 1.75rem; border-radius: 50%; font-size: .8rem; }
+.session-actions .help-button { width: 1.35rem; height: 1.35rem; min-width: 1.35rem; min-height: 1.35rem; flex: 0 0 1.35rem; border-radius: 50%; font-size: .7rem; }
 .help-button[aria-expanded="true"] { border-color: #b7f1ff; color: #10131b; background: #b7f1ff; }
-.app-shell:has(.home-action-bar) { padding-bottom: calc(6.5rem + env(safe-area-inset-bottom)); }
+.app-shell.home-view { padding-bottom: 7rem; padding-bottom: calc(7rem + env(safe-area-inset-bottom)); }
 .tempo-control, .duration { padding: 1rem; border: 1px solid #35415a; border-radius: 16px; background: #151b28; }
 .tempo-control { margin: 1.2rem 0; }
 .tempo-current { display: flex; justify-content: center; align-items: baseline; gap: .4rem; margin: .3rem 0 .7rem; color: #b7f1ff; }
@@ -45,7 +45,7 @@ output { margin-top: -.25rem; font-size: clamp(4rem, 18vw, 6.5rem); font-weight:
 .home-action-inner .home-start-button, .home-action-inner .home-reset-button { width: auto; min-height: 3.3rem; margin: 0; }
 .home-action-inner .home-start-button { flex: 1; }
 .home-action-inner .home-reset-button { flex: 0 0 auto; }
-.app-shell:has(.home-action-bar) { padding-top: max(.75rem, env(safe-area-inset-top)); }
+.app-shell.home-view { padding-top: max(.75rem, env(safe-area-inset-top)); }
 .controls { padding: .8rem; }
 .controls h2 { font-size: 1rem; }
 .controls .setting-heading { margin-bottom: .4rem; font-size: .9rem; }
@@ -108,6 +108,7 @@ output { margin-top: -.25rem; font-size: clamp(4rem, 18vw, 6.5rem); font-weight:
 .help-bubble-heading strong { color: #b7f1ff; white-space: nowrap; }
 .help-bubble-heading button, .session-actions .help-bubble-heading button { width: auto; min-height: 2rem; padding: .25rem .6rem; font-size: .8rem; }
 .help-bubble-text { display: block; margin-top: .35rem; word-break: keep-all; overflow-wrap: break-word; }
+.help-button { width: 1.35rem; height: 1.35rem; min-width: 1.35rem; min-height: 1.35rem; font-size: .7rem; line-height: 1; }
 .outdoor-stage { display: grid; grid-template-columns: minmax(0, 1fr) 11rem minmax(0, 1fr); align-items: start; width: 100%; }
 .outdoor-metric { display: grid; justify-items: center; align-content: start; min-width: 0; gap: .25rem; margin-top: 3.5rem; text-align: center; }
 .outdoor-metric > span { color: #bec5d4; font-size: .8rem; }
@@ -120,4 +121,28 @@ output { margin-top: -.25rem; font-size: clamp(4rem, 18vw, 6.5rem); font-weight:
 .outdoor-details button { min-height: 2.5rem; padding: .35rem .6rem; font-size: .8rem; }
 @media (max-width: 26rem) { .outdoor-stage { grid-template-columns: minmax(0, 1fr) 8rem minmax(0, 1fr); } .outdoor-stage .pendulum { width: 8rem; } .outdoor-metric strong { font-size: 1.5rem; } .outdoor-metric > span, .outdoor-metric small { font-size: .7rem; } }
 @media (max-width: 26rem) { .app-shell { padding-right: 1rem; padding-left: 1rem; } .subtle { font-size: .95rem; } .metronome-card { padding: 1.15rem; } .session-actions { grid-template-columns: 1fr; } .session-actions > span { display: grid; grid-template-columns: minmax(0, 1fr) auto; } .session-actions .help-tip { justify-self: end; } }
+@media (orientation: landscape) and (max-height: 35rem) and (min-width: 32rem) {
+  .app-shell.session-view { width: min(100%, 60rem); padding: max(.35rem, env(safe-area-inset-top)) max(.75rem, env(safe-area-inset-right)) max(.35rem, env(safe-area-inset-bottom)) max(.75rem, env(safe-area-inset-left)); }
+  .app-shell.session-view .app-header { min-height: 2.5rem; }
+  .app-shell.session-view .app-header h1 { font-size: 1.2rem; }
+  .metronome-card { grid-template-columns: minmax(0, 42%) minmax(0, 1fr); column-gap: .8rem; row-gap: .15rem; align-items: center; justify-items: center; margin: .3rem 0; padding: .6rem .8rem; }
+  .metronome-card > .pendulum, .metronome-card > .outdoor-stage { grid-column: 1; grid-row: 1 / span 7; align-self: center; }
+  .metronome-card > .outdoor-details { grid-column: 1; grid-row: 8; margin: 0; }
+  .metronome-card > :not(.pendulum):not(.outdoor-stage):not(.outdoor-details) { grid-column: 2; }
+  .metronome-card .pendulum { width: 7rem; height: 8rem; }
+  .metronome-card .arm { height: 5rem; }
+  .metronome-card .weight { bottom: -.35rem; }
+  .metronome-card output { margin: 0; font-size: clamp(2.8rem, 10vh, 4rem); }
+  .metronome-card output small { font-size: .8rem; }
+  .metronome-card .remaining-time { margin: .1rem 0; font-size: 1rem; }
+  .metronome-card .beat-label { min-height: 0; margin: .1rem 0; font-size: .85rem; }
+  .metronome-card .background-status { margin: 0; font-size: .75rem; }
+  .metronome-card .interval-session { margin: .1rem 0; }
+  .metronome-card .session-actions { width: 100%; margin-top: .3rem; }
+  .metronome-card .session-actions > span > button { min-height: 2.5rem; font-size: .8rem; }
+  .metronome-card .outdoor-stage { grid-template-columns: minmax(0, 1fr) 7rem minmax(0, 1fr); }
+  .metronome-card .outdoor-metric { margin-top: 1.5rem; }
+  .metronome-card .outdoor-metric strong { font-size: 1.25rem; }
+  .metronome-card .outdoor-metric > span, .metronome-card .outdoor-metric small { font-size: .65rem; }
+}
 @media (prefers-reduced-motion: reduce) { .pendulum.playing { animation: none; transform: rotate(0); } }
