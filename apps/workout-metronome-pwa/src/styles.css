@@ -108,10 +108,12 @@ output { margin-top: -.25rem; font-size: clamp(4rem, 18vw, 6.5rem); font-weight:
 .help-bubble-heading strong { color: #b7f1ff; white-space: nowrap; }
 .help-bubble-heading button, .session-actions .help-bubble-heading button { width: auto; min-height: 2rem; padding: .25rem .6rem; font-size: .8rem; }
 .help-bubble-text { display: block; margin-top: .35rem; word-break: keep-all; overflow-wrap: break-word; }
+.help-bubble-text a { color: #b7f1ff; }
 .help-button { width: 1.35rem; height: 1.35rem; min-width: 1.35rem; min-height: 1.35rem; font-size: .7rem; line-height: 1; }
 .outdoor-stage { display: grid; grid-template-columns: minmax(0, 1fr) 11rem minmax(0, 1fr); align-items: start; width: 100%; }
 .outdoor-metric { display: grid; justify-items: center; align-content: start; min-width: 0; gap: .25rem; margin-top: 3.5rem; text-align: center; }
 .outdoor-metric > span { color: #bec5d4; font-size: .8rem; }
+.weather-heading { display: inline-flex; align-items: center; justify-content: center; gap: .2rem; white-space: nowrap; }
 .outdoor-metric strong { font-size: clamp(1.5rem, 5vw, 2.2rem); font-variant-numeric: tabular-nums; line-height: 1.1; }
 .outdoor-metric small { color: #b7f1ff; font-size: .8rem; overflow-wrap: anywhere; }
 .outdoor-metric button { min-width: 0; min-height: 2.5rem; padding: .35rem; font-size: .75rem; line-height: 1.2; }

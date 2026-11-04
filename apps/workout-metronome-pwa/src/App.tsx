@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { DEFAULT_SETTINGS, SETTINGS_STORAGE_KEY, TEMPO_PRESETS, beatIntervalMs, clampDurationSeconds, clampTempo, gpsSpeedKmh, intervalPlanFor, intervalPosition, intervalTotalSeconds, isAccentBeat, loadSettings, normalizeIntervalPlan, shouldPlayIntervalCue, swingDurationMs, type BeatSound, type IntervalPlan, type MetronomeSettings } from './metronome';
 import { parseWeatherForecast, type WeatherForecast } from './weather';
 
@@ -64,7 +64,7 @@ const formatDuration = (seconds: number): string => {
   return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
 };
 
-function HelpTip({ id, text, open, onToggle }: { id: string; text: string; open: boolean; onToggle: () => void }) {
+function HelpTip({ id, text, open, onToggle }: { id: string; text: ReactNode; open: boolean; onToggle: () => void }) {
   const [offset, setOffset] = useState(0);
   const toggle = (event: MouseEvent<HTMLButtonElement>) => {
     const width = Math.min(320, window.innerWidth - 32);
@@ -532,7 +532,7 @@ export function App() {
     if (closing) return;
     requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
   };
-  const help = (id: string, text: string) => <HelpTip id={id} text={text} open={openHelp === id} onToggle={() => toggleHelp(id)} />;
+  const help = (id: string, text: ReactNode) => <HelpTip id={id} text={text} open={openHelp === id} onToggle={() => toggleHelp(id)} />;
   const pendulum = <div className={phase === 'playing' ? 'pendulum playing' : 'pendulum'} style={{ '--swing-duration': `${swingDurationMs(activeTempo)}ms` } as CSSProperties}>
     <span className="pivot" />
     <span className="arm"><span className="weight" /></span>
@@ -561,12 +561,12 @@ export function App() {
       {settings.environment === 'outdoor' ? <div className="outdoor-stage">
         <div className="outdoor-metric speed-metric"><span>속도</span><strong>{speedKmh === null ? '—' : speedKmh}</strong><small>km/h</small></div>
         {pendulum}
-        <div className="outdoor-metric weather-metric"><span>현지 예보</span>{weatherStatus === 'ready' && weatherForecast ? <><strong>{weatherForecast.temperatureC}°</strong><small>{weatherForecast.condition}</small></> : weatherStatus === 'loading' ? <small>조회 중</small> : weatherStatus === 'error' ? <button type="button" onClick={() => setWeatherRetry((value) => value + 1)}>다시 조회</button> : weatherEnabled && !weatherCoords ? <small>{locationState === 'denied' || locationState === 'error' || locationState === 'unavailable' ? '위치 필요' : '위치 대기'}</small> : <button type="button" onClick={() => setWeatherEnabled(true)}>날씨 조회</button>}</div>
+        <div className="outdoor-metric weather-metric"><span className="weather-heading">날씨 {help('weather-help', <>예보 자료: <a href="https://api.met.no/" target="_blank" rel="noreferrer">MET Norway</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a><br />기온과 날씨 상태를 간추려 표시합니다.</>)}</span>{weatherStatus === 'ready' && weatherForecast ? <><strong>{weatherForecast.temperatureC}°</strong><small>{weatherForecast.condition}</small></> : weatherStatus === 'loading' ? <small>조회 중</small> : weatherStatus === 'error' ? <button type="button" onClick={() => setWeatherRetry((value) => value + 1)}>다시 조회</button> : weatherEnabled && !weatherCoords ? <small>{locationState === 'denied' || locationState === 'error' || locationState === 'unavailable' ? '위치 필요' : '위치 대기'}</small> : <button type="button" onClick={() => setWeatherEnabled(true)}>날씨 조회</button>}</div>
       </div> : pendulum}
       {settings.environment === 'outdoor' && <div className="outdoor-details">
         {locationState !== 'ready' || speedKmh === null ? <p>{locationState === 'waiting' ? 'GPS 속도 확인 중' : locationState === 'unavailable' ? '위치 정보 미지원' : locationState === 'denied' ? '위치 권한이 거부되었습니다.' : locationState === 'error' ? '위치 정보를 받을 수 없습니다.' : 'GPS 속도 값이 없습니다.'}</p> : null}
         {(locationState === 'denied' || locationState === 'error') && <button type="button" onClick={() => setLocationRetry((value) => value + 1)}>위치 다시 시도</button>}
-        {!weatherEnabled ? <p>날씨 조회 시 대략적 위치와 IP가 MET Norway에 전달됩니다.</p> : weatherStatus === 'ready' ? <p>예보 자료: <a href="https://api.met.no/" target="_blank" rel="noreferrer">MET Norway</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a></p> : null}
+        {!weatherEnabled && <p>날씨 조회 시 대략적 위치와 IP가 MET Norway에 전달됩니다.</p>}
       </div>}
       <output aria-live="polite">{activeTempo}<small>BPM</small></output>
       {intervalStatus && <div className="interval-session" aria-live="polite"><strong>{intervalStatus.segment === 'work' ? '빠른 구간' : '회복 구간'} · {intervalStatus.round}/{intervalPlan!.rounds}회</strong><span>구간 남은 시간 {formatDuration(intervalStatus.segmentRemaining)}</span></div>}
