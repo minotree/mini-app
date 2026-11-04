@@ -16,6 +16,7 @@ export function App() {
   const [position, setPosition] = useState<PositionState>({ kind: 'idle' });
   const [settings, setSettings] = useState<HudSettings>(DEFAULT_HUD_SETTINGS);
   const [retryKey, setRetryKey] = useState(0);
+  const [previewDriving, setPreviewDriving] = useState(false);
 
   useEffect(() => {
     setSettings(loadHudSettings(localStorage.getItem(SETTINGS_STORAGE_KEY)));
@@ -58,6 +59,7 @@ export function App() {
 
   const speed = position.kind === 'ready' ? position.speedKmh : 0;
   const isSafetyLocked = isDriveSafetyLocked(speed);
+  const speedDigits = String(speed).length;
   const displayTransform = [settings.rotate180 ? 'rotate(180deg)' : '', settings.mirror ? 'scaleX(-1)' : '']
     .filter(Boolean)
     .join(' ');
@@ -94,10 +96,10 @@ export function App() {
   }
 
   return (
-    <main className={isSafetyLocked ? 'hud-shell driving' : 'hud-shell'} style={{ '--hud-color': settings.color, '--hud-font-scale': settings.fontScale } as CSSProperties}>
+    <main className={`hud-shell${isSafetyLocked ? ' driving' : previewDriving ? ' preview-driving' : ''}`} style={{ '--hud-color': settings.color, '--hud-font-scale': settings.fontScale } as CSSProperties}>
       <section className="hud" style={{ transform: displayTransform || undefined }} aria-label="현재 주행 속도">
         <p>GPS 참고 속도</p>
-        <output aria-live="polite" style={{ fontWeight: settings.fontWeight }}>{speed}</output>
+        <output className={`digits-${Math.min(speedDigits, 3)}`} aria-live="polite" style={{ fontWeight: settings.fontWeight }}>{speed}</output>
         <span>km/h</span>
         {position.kind === 'waiting' && <small>GPS 신호와 이동 속도를 확인하는 중입니다.</small>}
         {position.kind === 'ready' && position.accuracy !== null && <small>정확도 약 ±{position.accuracy}m</small>}
@@ -114,7 +116,7 @@ export function App() {
           </label>
           <label>
             글자 크기
-            <input type="range" min="0.75" max="1.25" step="0.05" value={settings.fontScale} onChange={(event) => setSettings((value) => ({ ...value, fontScale: Number(event.target.value) }))} disabled={isSafetyLocked} />
+            <input type="range" min="0.75" max="1.25" step="0.05" value={settings.fontScale} onFocus={() => setPreviewDriving(true)} onBlur={() => setPreviewDriving(false)} onChange={(event) => setSettings((value) => ({ ...value, fontScale: Number(event.target.value) }))} disabled={isSafetyLocked} />
           </label>
           <label>
             글자 두께
