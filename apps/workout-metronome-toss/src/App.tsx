@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type InputHTMLAttributes } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { Device, loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
 import { COMPLETION_AD_GROUP_ID } from './ads';
@@ -8,8 +8,44 @@ import { parseWeatherForecast, type WeatherForecast } from './weather';
 
 type Page = 'home' | 'workout' | 'complete';
 type Phase = 'idle' | 'count-in' | 'playing';
+type TempoStep = 1 | 5 | 10;
 
 const formatTime = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+
+type DeferredNumberInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange' | 'onBlur'> & {
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (value: number) => void;
+};
+
+const DeferredNumberInput = ({ value, min, max, onCommit, ...props }: DeferredNumberInputProps) => {
+  const [draft, setDraft] = useState(String(value));
+  const focusedRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusedRef.current) setDraft(String(value));
+  }, [value]);
+
+  return <input
+    {...props}
+    type="number"
+    min={min}
+    max={max}
+    value={draft}
+    onFocus={() => { focusedRef.current = true; }}
+    onChange={(event) => setDraft(event.target.value)}
+    onBlur={() => {
+      focusedRef.current = false;
+      const parsed = Number(draft);
+      const committed = draft.trim() === '' || !Number.isFinite(parsed)
+        ? value
+        : Math.min(max, Math.max(min, Math.round(parsed)));
+      setDraft(String(committed));
+      if (committed !== value) onCommit(committed);
+    }}
+  />;
+};
 
 const HELP_TEXT = {
   environment: '실내에서는 리듬만 표시합니다. 실외에서는 위치 권한을 요청해 GPS 참고 속도와 날씨를 표시합니다.',
@@ -67,6 +103,7 @@ const playWhistle = (context: AudioContext, nodes: Set<OscillatorNode>) => {
 
 export function App() {
   const [settings, setSettings] = useState<MetronomeSettings>(() => loadSettings(localStorage.getItem(SETTINGS_STORAGE_KEY)));
+  const [tempoStep, setTempoStep] = useState<TempoStep>(1);
   const [weightDraft, setWeightDraft] = useState(() => settings.weightKg?.toString() ?? '');
   const [page, setPage] = useState<Page>('home');
   const [phase, setPhase] = useState<Phase>('idle');
@@ -329,19 +366,19 @@ export function App() {
     {page === 'home' && <>
       <div className="home-scroll">
         <section className="field"><h2>운동 환경 {help('environment')}</h2><div className="choices two">{(['indoor', 'outdoor'] as const).map((mode) => <button key={mode} type="button" className={settings.environment === mode ? 'selected' : ''} onClick={() => update({ environment: mode })}>{mode === 'indoor' ? '실내' : '실외'}</button>)}</div></section>
-        <section className="field"><h2>템포 {help('tempo')} <span>{settings.tempo} BPM</span></h2><input type="range" aria-label="템포" min="40" max="240" value={settings.tempo} onChange={(event) => update({ tempo: Number(event.target.value) })} /><div className="choices three">{TEMPO_PRESETS.map((value) => <button key={value} type="button" className={settings.tempo === value ? 'selected' : ''} onClick={() => update({ tempo: value })}>{value}</button>)}</div></section>
-        <section className="field"><h2>목표 운동 시간 {help('duration')}</h2><div className="choices five">{[10, 20, 30, 45, 60].map((minutes) => <button key={minutes} type="button" disabled={started || !!plan} className={settings.durationSeconds === minutes * 60 && !plan ? 'selected' : ''} onClick={() => { update({ durationSeconds: minutes * 60 }); setRemaining(minutes * 60); }}>{minutes}분</button>)}</div>{plan && <p>인터벌 총 {formatTime(total)}</p>}</section>
-        <details className="field"><summary>인터벌 {settings.intervalMode === 'steady' ? '사용 안 함' : settings.intervalMode === 'short' ? '짧은 반복' : settings.intervalMode === 'balanced' ? '균형 반복' : '사용자 설정'} {help('interval')}</summary><div className="choices two">{([['steady', '사용 안 함'], ['short', '짧은 반복'], ['balanced', '균형 반복'], ['custom', '사용자 설정']] as const).map(([mode, label]) => <button key={mode} type="button" disabled={started} className={settings.intervalMode === mode ? 'selected' : ''} onClick={() => setIntervalMode(mode)}>{label}</button>)}</div>{plan && <div className="interval-grid">{([['workSeconds', '빠른 구간(초)', 30, 1800], ['workTempo', '빠른 BPM', 40, 240], ['recoverySeconds', '회복 구간(초)', 30, 1800], ['recoveryTempo', '회복 BPM', 40, 240], ['rounds', '반복 횟수', 1, 30]] as const).map(([key, label, min, max]) => <label key={key}><span className="interval-label">{label} <small>{min}~{max}</small></span><input type="number" min={min} max={max} value={plan[key]} disabled={started || settings.intervalMode !== 'custom'} onChange={(event) => { const normalized = normalizeIntervalPlan({ ...settings.customInterval, [key]: Number(event.target.value) }); update({ customInterval: normalized }); setRemaining(intervalTotalSeconds(normalized)); }} /></label>)}</div>}</details>
+        <section className="field tempo-field"><h2>템포 {help('tempo')} <span>{settings.tempo} BPM</span></h2><input type="range" aria-label="템포" min="40" max="240" value={settings.tempo} onChange={(event) => update({ tempo: Number(event.target.value) })} /><div className="tempo-adjust"><button type="button" aria-label={`템포 ${tempoStep} BPM 감소`} disabled={settings.tempo <= 40} onClick={() => update({ tempo: clampTempo(settings.tempo - tempoStep) })}>−</button><div className="tempo-steps" role="group" aria-label="템포 증감 단위">{([1, 5, 10] as const).map((step) => <button key={step} type="button" className={tempoStep === step ? 'selected' : ''} aria-pressed={tempoStep === step} onClick={() => setTempoStep(step)}>{step}</button>)}</div><button type="button" aria-label={`템포 ${tempoStep} BPM 증가`} disabled={settings.tempo >= 240} onClick={() => update({ tempo: clampTempo(settings.tempo + tempoStep) })}>+</button></div><div className="choices three">{TEMPO_PRESETS.map((value) => <button key={value} type="button" className={settings.tempo === value ? 'selected' : ''} onClick={() => update({ tempo: value })}>{value}</button>)}</div></section>
+        <section className="field"><h2>목표 운동 시간 {help('duration')}{plan && <span>총 {formatTime(total)}</span>}</h2><div className="choices five">{[10, 20, 30, 45, 60].map((minutes) => <button key={minutes} type="button" disabled={started || !!plan} className={settings.durationSeconds === minutes * 60 && !plan ? 'selected' : ''} onClick={() => { update({ durationSeconds: minutes * 60 }); setRemaining(minutes * 60); }}>{minutes}분</button>)}</div></section>
+        <details className="field"><summary>인터벌 {settings.intervalMode === 'steady' ? '사용 안 함' : settings.intervalMode === 'short' ? '짧은 반복' : settings.intervalMode === 'balanced' ? '균형 반복' : '사용자 설정'} {help('interval')}</summary><div className="choices two">{([['steady', '사용 안 함'], ['short', '짧은 반복'], ['balanced', '균형 반복'], ['custom', '사용자 설정']] as const).map(([mode, label]) => <button key={mode} type="button" disabled={started} className={settings.intervalMode === mode ? 'selected' : ''} onClick={() => setIntervalMode(mode)}>{label}</button>)}</div>{plan && <div className="interval-grid">{([['workSeconds', '빠른 구간(초)', 10, 1800], ['workTempo', '빠른 BPM', 40, 240], ['recoverySeconds', '회복 구간(초)', 30, 1800], ['recoveryTempo', '회복 BPM', 40, 240], ['rounds', '반복 횟수', 1, 30]] as const).map(([key, label, min, max]) => <label key={key}><span className="interval-label">{label} <small>{min}~{max}</small></span><DeferredNumberInput min={min} max={max} value={plan[key]} disabled={started || settings.intervalMode !== 'custom'} onCommit={(value) => { const normalized = normalizeIntervalPlan({ ...settings.customInterval, [key]: value }); update({ customInterval: normalized }); setRemaining(intervalTotalSeconds(normalized)); }} /></label>)}</div>}</details>
         <details className="field calorie-settings"><summary>칼로리 추정 설정 {help('calories')}</summary><p>실제로 한 운동을 선택해 주세요. 입력하지 않아도 메트로놈을 사용할 수 있습니다.</p><label><span>운동 종류</span><select value={settings.calorieActivity ?? ''} onChange={(event) => update({ calorieActivity: (event.target.value || null) as CalorieActivity | null })}><option value="">선택 안 함</option>{Object.entries(CALORIE_ACTIVITIES).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}</select></label><label><span>몸무게</span><span className="setting-value"><input type="number" inputMode="decimal" min="20" max="300" step="0.1" placeholder="20~300" value={weightDraft} onChange={(event) => { const draft = event.target.value; const weight = Number(draft); setWeightDraft(draft); update({ weightKg: draft !== '' && Number.isFinite(weight) && weight >= 20 && weight <= 300 ? weight : null }); }} /><span>kg</span></span></label><p>20~300kg 입력 시 완료 화면에 추정값을 표시합니다. 값은 이 기기의 브라우저 설정에 저장됩니다.</p></details>
         <details className="field details-settings">
           <summary>세부 설정</summary>
           <label className="setting-row">
-            <span className="setting-label">템포 직접 입력</span>
-            <span className="setting-value"><input type="number" min="40" max="240" value={settings.tempo} onChange={(event) => update({ tempo: clampTempo(Number(event.target.value)) })} /><span>BPM</span></span>
+            <span className="setting-label">템포 직접 입력 <small>40~240</small></span>
+            <span className="setting-value"><DeferredNumberInput min={40} max={240} disabled={!!plan} value={settings.tempo} onCommit={(tempo) => update({ tempo: clampTempo(tempo) })} /><span>BPM</span></span>
           </label>
           <label className="setting-row">
-            <span className="setting-label">운동 시간 직접 입력</span>
-            <span className="setting-value"><input type="number" min="10" max="240" disabled={started || !!plan} value={settings.durationSeconds / 60} onChange={(event) => { const value = Math.min(240, Math.max(10, Number(event.target.value))); update({ durationSeconds: value * 60 }); setRemaining(value * 60); }} /><span>분</span></span>
+            <span className="setting-label">운동 시간 직접 입력 <small>10~240</small></span>
+            <span className="setting-value"><DeferredNumberInput min={10} max={240} disabled={started || !!plan} value={settings.durationSeconds / 60} onCommit={(value) => { update({ durationSeconds: value * 60 }); setRemaining(value * 60); }} /><span>분</span></span>
           </label>
           <label className="setting-row">
             <span className="setting-label">박자 묶음 {help('group')}</span>

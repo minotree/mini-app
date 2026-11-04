@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, estimateCalories, intervalPlanFor, intervalPosition, intervalTotalSeconds, loadSettings } from './domain';
+import { DEFAULT_SETTINGS, estimateCalories, intervalPlanFor, intervalPosition, intervalTotalSeconds, loadSettings, normalizeIntervalPlan } from './domain';
 
 describe('토스 메트로놈 운동 규칙', () => {
   it('짧은 반복은 빠른·회복 구간을 10회 진행한다', () => {
@@ -12,6 +12,10 @@ describe('토스 메트로놈 운동 규칙', () => {
   });
   it('손상된 저장값은 안전한 기본 설정으로 복구한다', () => {
     expect(loadSettings('{')).toEqual(DEFAULT_SETTINGS);
+  });
+  it('사용자 인터벌의 빠른 구간은 최소 10초로 보정한다', () => {
+    expect(normalizeIntervalPlan({ workSeconds: 10 }).workSeconds).toBe(10);
+    expect(normalizeIntervalPlan({ workSeconds: 9 }).workSeconds).toBe(10);
   });
   it('몸무게와 활동이 없으면 칼로리를 표시하지 않고 인터벌 구간은 따로 합산한다', () => {
     expect(estimateCalories(null, 70, 1800, null)).toBeNull();

@@ -26,7 +26,7 @@ export const INTERVAL_PRESETS: Record<'short' | 'balanced', IntervalPlan> = {
 };
 const clampWhole = (value: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(value)));
 export const normalizeIntervalPlan = (value: Partial<IntervalPlan>): IntervalPlan => ({
-  workSeconds: clampWhole(Number.isFinite(value.workSeconds) ? value.workSeconds! : DEFAULT_INTERVAL_PLAN.workSeconds, 30, 1800),
+  workSeconds: clampWhole(Number.isFinite(value.workSeconds) ? value.workSeconds! : DEFAULT_INTERVAL_PLAN.workSeconds, 10, 1800),
   recoverySeconds: clampWhole(Number.isFinite(value.recoverySeconds) ? value.recoverySeconds! : DEFAULT_INTERVAL_PLAN.recoverySeconds, 30, 1800),
   workTempo: clampTempo(Number.isFinite(value.workTempo) ? value.workTempo! : DEFAULT_INTERVAL_PLAN.workTempo),
   recoveryTempo: clampTempo(Number.isFinite(value.recoveryTempo) ? value.recoveryTempo! : DEFAULT_INTERVAL_PLAN.recoveryTempo),

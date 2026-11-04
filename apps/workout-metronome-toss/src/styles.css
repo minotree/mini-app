@@ -30,9 +30,16 @@ button { cursor: pointer; }
 .choices button { min-width: 0; min-height: 2.5rem; border: 0; border-radius: 10px; color: #f6f7fb; background: #252b3a; font-size: .83rem; font-weight: 700; }
 .choices button.selected { color: #10131b; background: #b7f1ff; }
 .choices button:disabled { opacity: .5; }
+.tempo-adjust { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; align-items: center; gap: .4rem; margin-block: .55rem; }
+.tempo-adjust button { min-height: 2.5rem; border: 0; border-radius: 10px; color: #f6f7fb; background: #252b3a; font-size: 1rem; font-weight: 800; }
+.tempo-adjust > button { font-size: 1.35rem; }
+.tempo-adjust button.selected { color: #10131b; background: #b7f1ff; }
+.tempo-adjust button:disabled { opacity: .4; }
+.tempo-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; }
 .field > label { display: flex; align-items: center; justify-content: space-between; gap: .4rem; min-height: 2.7rem; font-size: .85rem; }
 .details-settings > .setting-row { display: grid; grid-template-columns: minmax(0, 1fr) 8rem; align-items: center; gap: .5rem; }
-.setting-label { display: inline-flex; align-items: center; gap: .2rem; min-width: 0; }
+.setting-label { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: .2rem; min-width: 0; }
+.setting-label small { color: #b7f1ff; font-size: .7rem; white-space: nowrap; }
 .setting-value { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
 .details-settings > .setting-row > select { justify-self: start; }
 .field > label input:not([type=checkbox]), .field > label select { width: 5rem; min-height: 2.2rem; border: 1px solid #46536e; border-radius: 7px; padding: .25rem; color: #f6f7fb; background: #10131b; font-size: 16px; }
