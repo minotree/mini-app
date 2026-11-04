@@ -1,6 +1,6 @@
 # mini-apps 전체 진행표
 
-> 앱별 변경 이력·자동 검사·실기기 미검증·다음 작업은 각 앱의 진행표에서 관리한다: [HUD](apps/hud-pwa/progress.md) · [Golf](apps/golf-pwa/progress.md) · [운동 메트로놈 PWA](apps/workout-metronome-pwa/progress.md) · [운동 메트로놈 토스](apps/workout-metronome-toss/progress.md)
+> 앱별 변경 이력·자동 검사·실기기 미검증·다음 작업은 각 앱의 진행표에서 관리한다: [HUD PWA](apps/hud-pwa/progress.md) · [HUD 토스](apps/hud-toss/progress.md) · [Golf](apps/golf-pwa/progress.md) · [운동 메트로놈 PWA](apps/workout-metronome-pwa/progress.md) · [운동 메트로놈 토스](apps/workout-metronome-toss/progress.md)
 
 ## 상태 기준
 
@@ -15,8 +15,8 @@
 
 | 일정 | 상태 | 현재 결과 | 다음 기준 또는 작업 |
 | --- | --- | --- | --- |
-| ☑ pnpm workspace 및 실행 체계 | 완료 | 세 PWA와 메트로놈 토스 패키지의 공통 검사·실행 명령을 구성 | 새 앱·서버 추가 때만 갱신 |
-| ☑ 프로젝트 지침 및 인수인계 기준 | 완료 | 권리·배포 승인·전 앱의 개발 중 검사→기능 정리 후 PWA 빌드 기준 반영 | 공통 정책 변경 때만 갱신 |
+| ☑ pnpm workspace 및 실행 체계 | 완료 | 세 PWA와 메트로놈·HUD 토스 패키지의 공통 검사·실행 명령을 구성 | 새 앱·서버 추가 때만 갱신 |
+| ☑ 프로젝트 지침 및 인수인계 기준 | 완료 | 권리·배포 승인·전 앱의 개발 중 검사→기능 정리 후 PWA 빌드·PowerShell 명령별 실행 위치 명시 기준 반영 | 공통 정책 변경 때만 갱신 |
 | ☑ 앱별 운영 문서 분리 | 완료 | 각 앱의 `AGENTS.md`·`progress.md`를 생성 | 이후 상세 변경은 앱 문서에 기록 |
 | ☑ Cloudflare 앱별 빌드 감시 경로 | 완료 | 세 Worker의 앱별 Include paths를 2026-11-03 사용자 제공 설정 화면에서 확인 | 추후 공통 패키지 파일 변경 시 세 Worker 빌드 영향 확인 |
 
@@ -29,6 +29,7 @@
 | ☑ PWA 핵심 기능 | 완료 | 안전 고지, GPS 속도, 표시 설정, 주행 중 메뉴 잠금을 구현 | 실기기·차량 환경 검증으로 진행 |
 | ☑ Cloudflare 자동 배포 | 완료 | GitHub `main` → Workers Builds 연결 완료 | 배포 URL의 PWA·GPS 동작 검증 |
 | ☐ 실제 기기 및 차량 검증 | 진행 중 | 자동 검사만 완료 | GPS·반사·180도 보정·설치·서비스 워커 확인 |
+| ☐ HUD 토스 미니앱 | 진행 중 | 독립 패키지·토스 SDK 위치 구독·로컬 웹 빌드 구현 | 콘솔 appName 확정, Devtools·토스 실기기·안전 문구 검증 |
 
 ## Golf 일정
 

@@ -18,6 +18,14 @@
 ## 배포와 검증
 
 - `wrangler.jsonc`는 `dist`를 제공하는 Cloudflare Workers Static Assets 설정이다. Build watch include paths는 `apps/hud-pwa/*`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`이다(2026-11-03 사용자 제공 Cloudflare 설정 화면 기준). 해당 파일 변경의 GitHub `main` push는 Workers Builds로 배포를 유발하므로, 커밋·푸시·직접 배포·계정 및 비밀값 변경은 명시 승인 후에만 한다.
-- 개발은 `pnpm.cmd dev:hud`, 타입 검사는 `pnpm.cmd --filter @mini-apps/hud-pwa typecheck`, 단위 검사는 `pnpm.cmd --filter @mini-apps/hud-pwa test`, 빌드는 `pnpm.cmd --filter @mini-apps/hud-pwa build`를 사용한다.
+
+| Key | Value |
+| --- | --- |
+| 실행 위치 | `D:\DEV\mini-apps` |
+| 개발 서버 | `pnpm.cmd dev:hud` → `http://127.0.0.1:5173/` |
+| 타입 검사 | `pnpm.cmd --filter @mini-apps/hud-pwa typecheck` |
+| 단위 검사 | `pnpm.cmd --filter @mini-apps/hud-pwa test` |
+| 빌드 | `pnpm.cmd --filter @mini-apps/hud-pwa build` |
+
 - 반복 개발과 기능 정리 후 PWA 빌드의 검증 순서는 루트 `AGENTS.md`의 공통 원칙을 따른다.
 - 브라우저 위치 권한, 실제 GPS, PWA 설치·서비스 워커, 화면 회전, 차량 거치와 반사 표시는 자동 검사와 별도로 기록한다.

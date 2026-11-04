@@ -79,6 +79,40 @@ importers:
         specifier: ^4.0.0
         version: 4.156.0(@types/node@24.19.2)
 
+  apps/hud-toss:
+    dependencies:
+      '@apps-in-toss/web-framework':
+        specifier: 3.9.0
+        version: 3.9.0(@babel/preset-env@7.29.7(@babel/core@7.29.7))(typanion@3.14.0)(typescript@5.9.3)
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: 18.3.1
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@apps-in-toss/devtools':
+        specifier: 3.9.0
+        version: 3.9.0(@apps-in-toss/web-framework@3.9.0(@babel/preset-env@7.29.7(@babel/core@7.29.7))(typanion@3.14.0)(typescript@5.9.3))(esbuild@0.28.2)(rolldown@1.2.16)(rollup@4.67.4)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2))
+      '@types/react':
+        specifier: ^18.3.0
+        version: 18.3.31
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.31)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.0
+        version: 6.1.2(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2))
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+      vite:
+        specifier: ^8.0.0
+        version: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)
+      vitest:
+        specifier: ^4.0.0
+        version: 4.1.12(@types/node@24.19.2)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2))
+
   apps/workout-metronome-pwa:
     dependencies:
       react:

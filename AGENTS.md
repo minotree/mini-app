@@ -9,7 +9,7 @@
 | 첫 앱 / 핵심 흐름 | HUD PWA: 안전 고지 후 위치 권한을 요청해 GPS 속도를 표시하고, 반사·색상·글자 크기/두께 설정을 제공한다. |
 | 다음 앱 후보 / 첫 범위 | Golf PWA: 사용자는 클럽만 선택하고 안내에 따라 스윙. 앱이 타구 영상에서 클럽 헤드 속도·임팩트 각도·볼 스피드 등을 자동 산출해 방향각·비거리를 추정. 스윙 모션·포즈 분석은 후속. |
 | 플랫폼 순서 | 기본 개발은 PWA → 토스 미니앱 → Android/iOS 하이브리드 순서로 진행하되, 운동 메트로놈의 첫 출시는 토스 미니앱을 우선한다. |
-| 플랫폼 상태 | HUD·Golf·운동 메트로놈 PWA를 구현했다. 운동 메트로놈 토스 미니앱은 독립 패키지로 첫 구현·로컬 빌드를 완료했으며 Devtools 화면 조작·토스 실기기·콘솔 업로드·출시는 미검증이다. Android·iOS 하이브리드 앱은 미착수이며 준비 폴더도 만들지 않는다. |
+| 플랫폼 상태 | HUD·Golf·운동 메트로놈 PWA를 구현했다. 운동 메트로놈 토스 미니앱과 HUD 토스 미니앱은 독립 패키지다. HUD 토스는 첫 구현·로컬 빌드까지 완료했으며 Devtools 화면 조작·토스 실기기·콘솔 업로드·출시는 미검증이다. Android·iOS 하이브리드 앱은 미착수이며 준비 폴더도 만들지 않는다. |
 | 데이터·인증 | 현재 로컬 브라우저 설정과 위치 정보만 사용한다. Supabase는 계정 동기화·원격 데이터가 확정될 때 검토한다. |
 | 호스팅·서버 | PWA 배포는 원칙적으로 Cloudflare Workers Static Assets와 GitHub `main` 자동 배포를 사용한다. HUD·Golf·운동 메트로놈 PWA의 Worker가 모두 GitHub 저장소에 연결되어 있고 배포 이력이 있다(2026-11-03 사용자 제공 Cloudflare 대시보드 화면 기준). 메트로놈 Production Worker는 `mini-apps-workout-metronome`이며 `https://mini-apps-workout-metronome.minotree0902.workers.dev`에서 제공한다. Golf Worker는 `mini-apps-golf`이며 공개 주소는 `https://mini-apps-golf.minotree0902.workers.dev`다. 커스텀 도메인·Worker 런타임 코드·원격 데이터는 미연결이다. Vercel·지도는 필요가 확정될 때만 추가한다. |
 | Node / pnpm | Node 24.22.0, pnpm 10.34.7 확인. 루트 `engines`와 `packageManager`에 기록한다. |
@@ -20,6 +20,7 @@
 
 - `apps/<app>-pwa`는 독립 React/Vite PWA다. UI·스타일·브라우저 API 어댑터는 해당 앱이 소유한다.
 - `apps/workout-metronome-toss`는 `moduibeat` 비게임 토스 미니앱이다. SDK/TDS와 위치 구독, 화면·상태는 이 앱이 소유한다. PWA 소스를 경계 밖 경로로 import하지 않는다.
+- `apps/hud-toss`는 HUD용 독립 토스 미니앱이다. 위치 구독과 화면·상태를 소유하며 HUD PWA 소스를 경계 밖 경로로 import하지 않는다. 콘솔 appName은 등록 뒤 확정한다.
 - 현재 공통 도메인 패키지는 만들지 않는다. 두 앱 이상에서 실제 공유되는 순수 계약 또는 규칙이 생길 때만 `packages/contracts`, `packages/core`, `packages/utils`를 추가하고 앱은 공개 export만 사용한다.
 - 토스 앱은 `apps/<app>-toss`, 하이브리드 앱은 `apps/<app>-mobile`로 별도 생성한다. PWA의 UI·라우팅·브라우저 전역을 가져오지 않는다.
 - HUD PWA의 위치 정보는 브라우저에서만 처리하며 서버로 전송하지 않는다. V-World 도로 제한속도·단속 카메라·Supabase·Cloudflare 연동은 키·데이터 출처·권한·비용이 확정되기 전에는 구현하지 않는다.
@@ -32,7 +33,7 @@
 
 - 루트 `AGENTS.md`는 모든 앱에 적용되는 공통 정책과 포트폴리오 수준의 결정을 관리한다. 앱별 제품 요구사항·브라우저 API·배포 상태는 해당 앱의 `AGENTS.md`가 기준이다.
 - 루트 `progress.md`는 완료·진행 중·미착수·보류 상태의 전체 일정과 공통·교차 앱 작업만 기록한다. 기능 변경의 구현·자동 검사·실기기 미검증 항목은 해당 앱의 `progress.md`에 기록한다.
-- 현재 앱 문서는 `apps/hud-pwa/`, `apps/golf-pwa/`, `apps/workout-metronome-pwa/`에 둔다. 새 앱을 추가할 때도 패키지 생성과 함께 두 문서를 생성한다.
+- 현재 앱 문서는 `apps/hud-pwa/`, `apps/hud-toss/`, `apps/golf-pwa/`, `apps/workout-metronome-pwa/`, `apps/workout-metronome-toss/`에 둔다. 새 앱을 추가할 때도 패키지 생성과 함께 두 문서를 생성한다.
 - 같은 사실을 루트와 앱 문서에 복제하지 않는다. 전체에 영향을 미치는 요약만 루트에 두고, 상세 이력의 단일 기준은 앱 문서로 둔다.
 
 ## 콘텐츠 및 권리
@@ -57,6 +58,9 @@
 
 ## 작업·검증·인수인계 원칙
 
+- PowerShell에서 실행하는 명령을 `AGENTS.md`, `docs/development.md`, `progress.md` 또는 인수인계 문서에 기록할 때는 실행 위치(작업 디렉터리)를 반드시 함께 명시한다. 코드 블록은 먼저 `cd <실행 위치>`를 적고, 표나 인라인 명령은 같은 절의 `실행 위치` 항목 또는 명령별 열로 경로를 밝힌다. 저장소 루트 명령과 앱 패키지 내부 명령을 구분하며, 추후 추가하는 개발·검사·빌드·미리보기·Git·업로드·배포 명령에도 같은 기준을 적용한다.
+- 앱별 `AGENTS.md`에 여러 PowerShell 실행 명령을 기록할 때는 `Key / Value` 표를 기본 형식으로 사용해 `실행 위치`, `개발 서버`, `타입 검사`, `단위 검사`, `빌드`, 필요 시 `미리보기`·`번들 생성`·`업로드`를 행별로 분리한다. 명령은 생략형이 아닌 그대로 복사해 실행할 수 있는 전체 형태로 적는다.
+- 토스 미니앱의 `AGENTS.md`에는 `.ait` 생성과 콘솔 업로드를 별도 표로 기록한다. PowerShell 실행 위치는 해당 `apps/<app>-toss` 폴더로 명시하고, 최초 인증 `npx ait token add`, 업로드 `npx ait deploy`, 콘솔 appName·최신 번들 확인, 업로드 후 새 QR/테스트 스킴의 `deploymentId` 실기기 검증, 사용자 명시 승인 조건을 포함한다. API 키는 명령 인수·문서·Git에 남기지 않으며, 번들 생성·콘솔 업로드·검수 요청·출시를 각각 별도 단계로 기록한다.
 - 모든 앱의 반복 개발은 해당 개발 서버에서 화면·동작을 확인하고 실제 `package.json` 스크립트로 타입 검사·단위 테스트를 수행한다. 기능을 일정 단위로 정리한 뒤 해당 앱의 PWA 빌드와 서비스 워커를 검증한다. 빌드 검증 전에는 배포 가능 상태로 기록하지 않으며, 배포·출시 전에는 빌드를 통과해야 한다. 매 작업에서 `git diff --check`와 최종 diff를 확인한다. 문서만 바뀐 경우에는 불필요한 빌드를 반복하지 않는다.
 - 브라우저 검사, PWA 설치·서비스 워커, Android·iOS 실기기, 토스 Devtools, 토스 실기기, 배포·출시는 별도 상태로 기록한다. 자동 검사 또는 한 플랫폼의 결과로 다른 플랫폼의 동작을 주장하지 않는다.
 - 작업을 마칠 때는 공통 규칙·기준을 이 파일에, 앱별 구현·검증 결과와 미검증 항목을 해당 앱의 `progress.md`에 남긴다. 전체 일정의 완료·진행 중·미착수·보류 상태 또는 공통 작업은 루트 `progress.md`에 남긴다. 관련 요구사항·구조·실행 문서는 변경이 실제 영향을 줄 때만 함께 갱신한다.
@@ -74,6 +78,7 @@
 ## 실행과 검증
 
 - 실제 실행·검사·Git·배포 명령의 기준 문서는 `docs/development.md`다. 앱·서버·포트·배포 스크립트를 추가하거나 변경할 때 같은 변경에서 이 문서와 루트 스크립트·README·progress를 갱신한다.
+- 아래 PowerShell 명령의 실행 위치는 저장소 루트 `D:\DEV\mini-apps`다.
 - HUD 개발: `pnpm.cmd dev:hud` (`http://127.0.0.1:5173`)
 - Golf 개발: `pnpm.cmd dev:golf` (`http://127.0.0.1:5180`)
 - Cloudflare 로컬 미리보기: `pnpm.cmd dev:cloudflare:hud` (`http://localhost:8787`)
@@ -83,6 +88,8 @@
 - 메트로놈 Cloudflare 로컬 미리보기: `pnpm.cmd dev:cloudflare:metronome` (`http://localhost:8789`)
 - 메트로놈 Cloudflare 배포(명시 승인 후): `pnpm.cmd deploy:cloudflare:metronome`
 - 메트로놈 토스 개발: `pnpm.cmd dev:metronome:toss` (`http://127.0.0.1:5182/`)
+- HUD 토스 개발: `pnpm.cmd dev:hud:toss` (`http://127.0.0.1:5183/`)
+- HUD 토스 웹 빌드/`.ait` 생성: `pnpm.cmd build:hud:toss` / `pnpm.cmd build:ait:hud` (업로드·출시 제외; appName 확정 전 업로드 금지)
 - 메트로놈 토스 `.ait` 생성: `pnpm.cmd build:ait:metronome` (업로드·출시 제외)
 - 메트로놈 토스 광고 테스트/운영 `.ait` 생성: `pnpm.cmd build:ait:metronome:test` / `pnpm.cmd build:ait:metronome:live` (업로드·출시 제외). 운영 ID로 기기 광고 테스트를 하지 않고, 운영 번들에 테스트 ID가 없는지 확인한다.
 - 타입 검사: `pnpm.cmd typecheck`

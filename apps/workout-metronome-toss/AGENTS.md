@@ -34,20 +34,23 @@
 
 | Key | Value |
 | --- | --- |
+| 실행 위치 | `D:\DEV\mini-apps` |
 | 설치 버전 | `@apps-in-toss/web-framework`·Devtools 3.9.0, TDS 2.5.1, React 18.3.1. SDK/TDS peer 제약과 공식 문서를 변경 때 재확인한다. |
 | 개발 서버 | `pnpm.cmd dev:metronome:toss` → `http://127.0.0.1:5182/` |
-| 앱 검사 | 해당 패키지의 `typecheck`, `test`, `build` |
+| 타입 검사 | `pnpm.cmd --filter @mini-apps/workout-metronome-toss typecheck` |
+| 단위 검사 | `pnpm.cmd --filter @mini-apps/workout-metronome-toss test` |
+| 빌드 | `pnpm.cmd --filter @mini-apps/workout-metronome-toss build` |
 | 일반 `.ait` | `pnpm.cmd build:ait:metronome` → 광고 없음 |
 | 광고 테스트 `.ait` | `pnpm.cmd build:ait:metronome:test` → 공식 테스트 ID |
 | 운영 `.ait` | `pnpm.cmd build:ait:metronome:live` → 운영 ID |
 
-## 업로드와 인수인계
+## 토스 콘솔 `.ait` 업로드와 인수인계
 
 | Key | Value |
 | --- | --- |
 | 실행 위치 | `D:\DEV\mini-apps\apps\workout-metronome-toss` |
 | 최초 인증 | 토스 콘솔에서 API 키를 발급받아 `npx ait token add`로 등록한다. API 키를 명령 인수·문서·Git에 남기지 않는다. |
-| CLI 업로드 | 최신 `moduibeat.ait`의 빌드 모드를 확인한 뒤 `npx ait deploy`를 실행한다. [토스 공식 CLI 안내](https://developers-apps-in-toss.toss.im/guide/operation/toss.md) |
+| 콘솔 업로드 | 최신 `moduibeat.ait`의 파일명·생성 시각·빌드 모드를 확인하고 사용자 명시 승인 후 `npx ait deploy`를 실행한다. [토스 공식 CLI 안내](https://developers-apps-in-toss.toss.im/guide/operation/toss.md) |
 | 업로드 뒤 검사 | 새 테스트 스킴/QR의 `deploymentId`로 실기기를 확인한다. 업로드는 검수 요청이나 출시가 아니다. |
 | 상태 기록 | Devtools 브라우저, `.ait` 생성, 콘솔 업로드, QR 실기기 테스트, 출시를 각각 기록한다. `.ait` 생성만으로 업로드·출시가 완료되지는 않는다. |
 | 승인 범위 | 업로드·배포·Git 푸시는 사용자 명시 승인 후 진행한다. |

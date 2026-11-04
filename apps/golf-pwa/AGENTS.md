@@ -17,6 +17,14 @@
 ## 배포와 검증
 
 - `wrangler.jsonc`는 `mini-apps-golf` Static Assets Worker 설정이다. 2026-11-03 사용자 제공 Cloudflare 대시보드 화면에서 Worker 생성·GitHub 연결·배포 이력을 확인했다. 향후 직접 배포·설정 변경은 명시 승인 후에만 진행한다.
-- 개발은 `pnpm.cmd dev:golf`, 타입 검사·단위 검사·빌드는 각각 `pnpm.cmd --filter @mini-apps/golf-pwa typecheck`, `test`, `build`를 사용한다.
+
+| Key | Value |
+| --- | --- |
+| 실행 위치 | `D:\DEV\mini-apps` |
+| 개발 서버 | `pnpm.cmd dev:golf` → `http://127.0.0.1:5180/` |
+| 타입 검사 | `pnpm.cmd --filter @mini-apps/golf-pwa typecheck` |
+| 단위 검사 | `pnpm.cmd --filter @mini-apps/golf-pwa test` |
+| 빌드 | `pnpm.cmd --filter @mini-apps/golf-pwa build` |
+
 - 반복 개발과 기능 정리 후 PWA 빌드의 검증 순서는 루트 `AGENTS.md`의 공통 원칙을 따른다.
 - 실제 카메라 권한·미리보기, 음성 안내, 타구·볼·클럽 헤드 추적, 측정 정확도는 자동 검사와 분리해 기록한다.

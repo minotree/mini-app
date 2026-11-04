@@ -2,23 +2,25 @@
 
 작은 단일 목적 앱을 pnpm workspace로 관리한다. 앱마다 PWA를 먼저 만들고, 필요가 확정되면 토스 미니앱과 Capacitor 기반 Android/iOS 하이브리드 앱을 독립 구현한다.
 
-현재 앱은 `apps/hud-pwa`의 스마트폰 HUD PWA, `apps/golf-pwa`의 런치 분석 MVP, `apps/workout-metronome-pwa`의 운동용 메트로놈 PWA, `apps/workout-metronome-toss`의 토스 미니앱이다. 메트로놈은 실내·실외 선택, 공통 BPM 템포, 실제 추 움직임을 제공하며 실외 운동 화면에서는 위치 기반 참고 속도를 표시한다.
+현재 앱은 `apps/hud-pwa`의 스마트폰 HUD PWA, `apps/hud-toss`의 HUD 토스 미니앱, `apps/golf-pwa`의 런치 분석 MVP, `apps/workout-metronome-pwa`의 운동용 메트로놈 PWA, `apps/workout-metronome-toss`의 토스 미니앱이다. 메트로놈은 실내·실외 선택, 공통 BPM 템포, 실제 추 움직임을 제공하며 실외 운동 화면에서는 위치 기반 참고 속도를 표시한다.
 
 ## 시작
 
 ```powershell
 pnpm.cmd install
 pnpm.cmd dev:hud
+pnpm.cmd dev:hud:toss
 pnpm.cmd dev:metronome
 pnpm.cmd dev:metronome:toss
 ```
 
-HUD 개발 서버는 `http://127.0.0.1:5173`, 메트로놈 PWA는 `http://127.0.0.1:5181`, 토스 Devtools 서버는 `http://127.0.0.1:5182`에서 열린다. 각 명령은 별도로 실행한다.
+HUD PWA 개발 서버는 `http://127.0.0.1:5173`, HUD 토스 Devtools는 `http://127.0.0.1:5183`, 메트로놈 PWA는 `http://127.0.0.1:5181`, 메트로놈 토스 Devtools는 `http://127.0.0.1:5182`에서 열린다. 각 명령은 별도로 실행한다.
 
 ```powershell
 pnpm.cmd typecheck
 pnpm.cmd build
 pnpm.cmd preview:hud
+pnpm.cmd build:ait:hud
 pnpm.cmd preview:metronome
 pnpm.cmd build:ait:metronome
 pnpm.cmd build:ait:metronome:test

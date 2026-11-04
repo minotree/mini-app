@@ -2,6 +2,8 @@
 
 이 문서는 `mini-apps`의 실제 실행 명령을 모은 기준 문서다. 앱이나 서버를 추가·제거하거나 포트·배포 흐름이 바뀌면 같은 변경에서 이 문서, 루트 `package.json` 스크립트, 루트 `AGENTS.md`, 해당 앱의 `AGENTS.md`와 `progress.md`를 함께 갱신한다. 전체 상태에 영향을 주면 루트 `progress.md`도 갱신한다.
 
+이 문서의 PowerShell 명령은 별도 실행 위치를 밝히지 않은 경우 모두 저장소 루트 `D:\DEV\mini-apps`에서 실행한다. 앱 폴더 등 다른 위치에서 실행해야 하는 명령은 해당 절에 `실행 위치`를 별도로 명시한다. 새 명령을 추가할 때도 코드 블록에는 `cd <실행 위치>`를 먼저 적고, 표나 인라인 명령에는 절 단위 또는 명령별 실행 위치를 함께 기록한다.
+
 ## 공통
 
 ```powershell
@@ -28,6 +30,19 @@ pnpm.cmd build
 | Cloudflare 직접 배포 | `pnpm.cmd deploy:cloudflare:hud` | 사용자 승인·계정 인증 후에만 실행 |
 
 개발 서버 종료는 해당 터미널에서 `Ctrl+C`다. 실제 위치 정보는 HTTPS 또는 `localhost`의 지원 브라우저·휴대폰에서 확인한다.
+
+## HUD 토스 미니앱
+
+| 목적 | 명령 | 주소 / 상태 |
+| --- | --- | --- |
+| Vite + AIT Devtools | `pnpm.cmd dev:hud:toss` | `http://127.0.0.1:5183/`; 화면 조작 미검증 |
+| 앱 검사 | `pnpm.cmd --filter @mini-apps/hud-toss typecheck`, `test`, `build` | 로컬 검사 |
+| 웹 빌드 | `pnpm.cmd build:hud:toss` | `apps/hud-toss/dist`; 업로드 제외 |
+| `.ait` 생성 | `pnpm.cmd build:ait:hud` | 콘솔 appName 확정 후 사용; 업로드 제외 |
+
+앱의 `moduihud`는 임시 appName이다. 토스 콘솔 등록값으로 교체한 뒤 번들을 생성한다. 위치 좌표에서 계산하는 GPS 참고 속도와 설정 화면은 토스 SDK·Devtools 및 실제 기기에서 각각 검증한다. 위치 권한 거부·재시도·화면 회전·반사 표시도 별도 확인한다.
+
+토스 콘솔 `.ait` 업로드 PowerShell 명령의 실행 위치는 `D:\DEV\mini-apps\apps\hud-toss`다. 실제 appName 확정과 최신 번들 확인 후, 사용자 명시 승인을 받아 최초 1회 `npx ait token add`, 업로드 시 `npx ait deploy`를 실행한다. API 키는 명령 인수·문서·Git에 남기지 않는다. 업로드 뒤 새 QR/테스트 스킴의 `deploymentId`로 실기기를 확인하며, 업로드를 검수 요청이나 출시로 간주하지 않는다.
 
 ## Golf PWA
 
@@ -91,6 +106,8 @@ Build watch include paths: apps/workout-metronome-pwa/*, package.json, pnpm-lock
 
 ## 모두의 비트 토스 미니앱
 
+실행 위치: `D:\DEV\mini-apps`
+
 | 목적 | 명령 | 주소 / 상태 |
 | --- | --- | --- |
 | Vite + AIT Devtools | `pnpm.cmd dev:metronome:toss` | `http://127.0.0.1:5182/`; 서버 HTTP 200 확인, Devtools 화면 조작 미검증 |
@@ -104,7 +121,11 @@ Build watch include paths: apps/workout-metronome-pwa/*, package.json, pnpm-lock
 
 SDK 개발 흐름은 [토스 WebView 시작 가이드](https://developers-apps-in-toss.toss.im/ai-vibe-coding/tutorials/webview.md)와 설치 패키지 타입을 2026-11-03 확인했다. 토스 SDK 빌드와 TDS 권리 조건은 앱별 `AGENTS.md`·`progress.md`를 따른다.
 
+토스 콘솔 `.ait` 업로드 PowerShell 명령의 실행 위치는 `D:\DEV\mini-apps\apps\workout-metronome-toss`다. 최신 `moduibeat.ait`의 파일명·생성 시각·광고 빌드 모드를 확인하고 사용자 명시 승인을 받은 뒤, 최초 1회 `npx ait token add`, 업로드 시 `npx ait deploy`를 실행한다. API 키는 명령 인수·문서·Git에 남기지 않는다. 업로드 뒤 새 QR/테스트 스킴의 `deploymentId`로 실기기를 확인하며, 업로드를 검수 요청이나 출시로 간주하지 않는다.
+
 ## GitHub 및 Cloudflare 자동 배포
+
+아래 PowerShell Git 명령의 실행 위치는 `D:\DEV\mini-apps`다.
 
 현재 원격은 `origin`의 `https://github.com/minotree/mini-app.git`, 배포 브랜치는 `main`이다. HUD·Golf·메트로놈 PWA Worker 모두 이 저장소에 연결되어 있다. 2026-11-03 사용자 제공 Cloudflare 설정 화면 기준, 세 Worker는 각자의 `apps/<app>/*`와 공통 `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`를 감시한다. PWA 앱 폴더만 바뀐 `main` push는 해당 Worker만 빌드하고, 공통 패키지 파일이 바뀌면 세 Worker 모두 빌드한다. 토스 패키지는 Cloudflare Worker 배포 대상이 아니다. 이번 토스 패키지 추가로 루트 `package.json`·`pnpm-lock.yaml`이 바뀌었으므로, 이 변경을 `main`에 푸시하면 기존 세 PWA Worker도 빌드 대상이다. `main` push 전에 변경 내용을 검사한다.
 
@@ -141,8 +162,8 @@ Cloudflare Workers Builds 설정값은 다음을 사용한다. 대시보드 Work
 ## 새 앱 또는 서버 추가 시
 
 1. 앱 이름과 플랫폼을 확정하고 `apps/<이름>-pwa` 또는 해당 플랫폼 패키지를 만든다.
-2. 포트가 필요한 서버는 기존 포트(5173 HUD Vite, 4173 HUD preview, 5180 Golf Vite, 4180 Golf preview, 5181 메트로놈 PWA Vite, 4181 PWA preview, 5182 메트로놈 토스 Vite, 4182 토스 preview, 8787 HUD·8788 Golf·8789 메트로놈 Cloudflare local preview)와 충돌하지 않게 정한다.
+2. 포트가 필요한 서버는 기존 포트(5173 HUD Vite, 4173 HUD preview, 5180 Golf Vite, 4180 Golf preview, 5181 메트로놈 PWA Vite, 4181 PWA preview, 5182 메트로놈 토스 Vite, 4182 토스 preview, 5183 HUD 토스 Vite, 4183 HUD 토스 preview, 8787 HUD·8788 Golf·8789 메트로놈 Cloudflare local preview)와 충돌하지 않게 정한다.
 3. 루트 `package.json`에 `dev:<앱>`처럼 대상을 드러내는 스크립트를 추가한다.
-4. 이 문서의 표에 실행·미리보기·검사·배포 명령과 포트·검증 상태를 추가한다.
+4. 이 문서의 표에 실행·미리보기·검사·배포 명령, PowerShell 실행 위치, 포트·검증 상태를 추가한다. 토스 미니앱이면 앱 폴더에서 실행하는 `.ait` 콘솔 인증·업로드 명령과 승인·실기기 확인 조건도 기록한다.
 5. 해당 앱의 `AGENTS.md`와 `progress.md`에 플랫폼 상태·서비스 책임·실제 검증 결과를 기록하고, 루트 문서에는 공통 규칙 또는 전체 상태 변화만 반영한다.
 

@@ -30,5 +30,13 @@
 
 - `wrangler.jsonc`는 `mini-apps-workout-metronome` Worker에서 `dist`를 제공한다. GitHub Workers Builds와 production URL `https://mini-apps-workout-metronome.minotree0902.workers.dev`가 연결돼 있다.
 - Build watch include paths는 `apps/workout-metronome-pwa/*`, `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`이다(2026-11-03 사용자 제공 Cloudflare 설정 화면 기준). 변경은 사용자와 배포 영향을 확인한 뒤에만 한다. 커밋·푸시·직접 배포·계정과 비밀값 변경도 명시 승인 후에만 한다.
-- 개발은 `pnpm.cmd dev:metronome`, 타입 검사·단위 검사·빌드는 각각 `pnpm.cmd --filter @mini-apps/workout-metronome-pwa typecheck`, `test`, `build`를 사용한다.
+
+| Key | Value |
+| --- | --- |
+| 실행 위치 | `D:\DEV\mini-apps` |
+| 개발 서버 | `pnpm.cmd dev:metronome` → `http://127.0.0.1:5181/` |
+| 타입 검사 | `pnpm.cmd --filter @mini-apps/workout-metronome-pwa typecheck` |
+| 단위 검사 | `pnpm.cmd --filter @mini-apps/workout-metronome-pwa test` |
+| 빌드 | `pnpm.cmd --filter @mini-apps/workout-metronome-pwa build` |
+
 - 검증 순서는 루트 `AGENTS.md`의 전체 앱 공통 원칙을 따른다.

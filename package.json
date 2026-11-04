@@ -7,6 +7,9 @@
   },
   "scripts": {
     "dev:hud": "pnpm --filter @mini-apps/hud-pwa dev",
+    "dev:hud:toss": "pnpm --filter @mini-apps/hud-toss dev",
+    "build:hud:toss": "pnpm --filter @mini-apps/hud-toss build",
+    "build:ait:hud": "pnpm --filter @mini-apps/hud-toss build:ait",
     "preview:hud": "pnpm --filter @mini-apps/hud-pwa preview",
     "dev:golf": "pnpm --filter @mini-apps/golf-pwa dev",
     "preview:golf": "pnpm --filter @mini-apps/golf-pwa preview",
