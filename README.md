@@ -2,7 +2,7 @@
 
 작은 단일 목적 앱을 pnpm workspace로 관리한다. 앱마다 PWA를 먼저 만들고, 필요가 확정되면 토스 미니앱과 Capacitor 기반 Android/iOS 하이브리드 앱을 독립 구현한다.
 
-현재 앱은 `apps/hud-pwa`의 스마트폰 HUD PWA, `apps/golf-pwa`의 런치 분석 MVP, `apps/workout-metronome-pwa`의 운동용 메트로놈 PWA다. 메트로놈은 실내·실외 선택, 공통 BPM 템포, 실제 추 움직임을 제공하며 실외 운동 화면에서는 GPS 참고 속도를 표시한다.
+현재 앱은 `apps/hud-pwa`의 스마트폰 HUD PWA, `apps/golf-pwa`의 런치 분석 MVP, `apps/workout-metronome-pwa`의 운동용 메트로놈 PWA, `apps/workout-metronome-toss`의 토스 미니앱이다. 메트로놈은 실내·실외 선택, 공통 BPM 템포, 실제 추 움직임을 제공하며 실외 운동 화면에서는 위치 기반 참고 속도를 표시한다.
 
 ## 시작
 
@@ -10,16 +10,22 @@
 pnpm.cmd install
 pnpm.cmd dev:hud
 pnpm.cmd dev:metronome
+pnpm.cmd dev:metronome:toss
 ```
 
-개발 서버는 `http://127.0.0.1:5173`에서 열린다.
+HUD 개발 서버는 `http://127.0.0.1:5173`, 메트로놈 PWA는 `http://127.0.0.1:5181`, 토스 Devtools 서버는 `http://127.0.0.1:5182`에서 열린다. 각 명령은 별도로 실행한다.
 
 ```powershell
 pnpm.cmd typecheck
 pnpm.cmd build
 pnpm.cmd preview:hud
 pnpm.cmd preview:metronome
+pnpm.cmd build:ait:metronome
+pnpm.cmd build:ait:metronome:test
+pnpm.cmd build:ait:metronome:live
 ```
+
+메트로놈 토스 `.ait`는 일반 명령에서 광고를 넣지 않는다. 광고 QR 테스트는 `:test`, 운영 광고가 포함된 출시 후보 생성은 `:live`를 사용한다. 생성만으로 업로드·출시되지는 않는다.
 
 ## Cloudflare Workers 배포 준비
 

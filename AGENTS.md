@@ -9,7 +9,7 @@
 | 첫 앱 / 핵심 흐름 | HUD PWA: 안전 고지 후 위치 권한을 요청해 GPS 속도를 표시하고, 반사·색상·글자 크기/두께 설정을 제공한다. |
 | 다음 앱 후보 / 첫 범위 | Golf PWA: 사용자는 클럽만 선택하고 안내에 따라 스윙. 앱이 타구 영상에서 클럽 헤드 속도·임팩트 각도·볼 스피드 등을 자동 산출해 방향각·비거리를 추정. 스윙 모션·포즈 분석은 후속. |
 | 플랫폼 순서 | 기본 개발은 PWA → 토스 미니앱 → Android/iOS 하이브리드 순서로 진행하되, 운동 메트로놈의 첫 출시는 토스 미니앱을 우선한다. |
-| 플랫폼 상태 | HUD PWA 구현 진행, Golf PWA는 런치 분석 MVP 기반 구현 대상, 운동 메트로놈 PWA는 기본 리듬 MVP 구현 대상이며 토스 미니앱 출시 준비를 우선한다. Android·iOS 앱은 미착수이며 준비 폴더도 만들지 않는다. |
+| 플랫폼 상태 | HUD·Golf·운동 메트로놈 PWA를 구현했다. 운동 메트로놈 토스 미니앱은 독립 패키지로 첫 구현·로컬 빌드를 완료했으며 Devtools 화면 조작·토스 실기기·콘솔 업로드·출시는 미검증이다. Android·iOS 하이브리드 앱은 미착수이며 준비 폴더도 만들지 않는다. |
 | 데이터·인증 | 현재 로컬 브라우저 설정과 위치 정보만 사용한다. Supabase는 계정 동기화·원격 데이터가 확정될 때 검토한다. |
 | 호스팅·서버 | PWA 배포는 원칙적으로 Cloudflare Workers Static Assets와 GitHub `main` 자동 배포를 사용한다. HUD·Golf·운동 메트로놈 PWA의 Worker가 모두 GitHub 저장소에 연결되어 있고 배포 이력이 있다(2026-11-03 사용자 제공 Cloudflare 대시보드 화면 기준). 메트로놈 Production Worker는 `mini-apps-workout-metronome`이며 `https://mini-apps-workout-metronome.minotree0902.workers.dev`에서 제공한다. Golf Worker는 `mini-apps-golf`이며 공개 주소는 `https://mini-apps-golf.minotree0902.workers.dev`다. 커스텀 도메인·Worker 런타임 코드·원격 데이터는 미연결이다. Vercel·지도는 필요가 확정될 때만 추가한다. |
 | Node / pnpm | Node 24.22.0, pnpm 10.34.7 확인. 루트 `engines`와 `packageManager`에 기록한다. |
@@ -19,6 +19,7 @@
 ## 구조와 경계
 
 - `apps/<app>-pwa`는 독립 React/Vite PWA다. UI·스타일·브라우저 API 어댑터는 해당 앱이 소유한다.
+- `apps/workout-metronome-toss`는 `moduibeat` 비게임 토스 미니앱이다. SDK/TDS와 위치 구독, 화면·상태는 이 앱이 소유한다. PWA 소스를 경계 밖 경로로 import하지 않는다.
 - 현재 공통 도메인 패키지는 만들지 않는다. 두 앱 이상에서 실제 공유되는 순수 계약 또는 규칙이 생길 때만 `packages/contracts`, `packages/core`, `packages/utils`를 추가하고 앱은 공개 export만 사용한다.
 - 토스 앱은 `apps/<app>-toss`, 하이브리드 앱은 `apps/<app>-mobile`로 별도 생성한다. PWA의 UI·라우팅·브라우저 전역을 가져오지 않는다.
 - HUD PWA의 위치 정보는 브라우저에서만 처리하며 서버로 전송하지 않는다. V-World 도로 제한속도·단속 카메라·Supabase·Cloudflare 연동은 키·데이터 출처·권한·비용이 확정되기 전에는 구현하지 않는다.
@@ -81,6 +82,9 @@
 - Golf Cloudflare 배포(명시 승인 후): `pnpm.cmd deploy:cloudflare:golf`
 - 메트로놈 Cloudflare 로컬 미리보기: `pnpm.cmd dev:cloudflare:metronome` (`http://localhost:8789`)
 - 메트로놈 Cloudflare 배포(명시 승인 후): `pnpm.cmd deploy:cloudflare:metronome`
+- 메트로놈 토스 개발: `pnpm.cmd dev:metronome:toss` (`http://127.0.0.1:5182/`)
+- 메트로놈 토스 `.ait` 생성: `pnpm.cmd build:ait:metronome` (업로드·출시 제외)
+- 메트로놈 토스 광고 테스트/운영 `.ait` 생성: `pnpm.cmd build:ait:metronome:test` / `pnpm.cmd build:ait:metronome:live` (업로드·출시 제외). 운영 ID로 기기 광고 테스트를 하지 않고, 운영 번들에 테스트 ID가 없는지 확인한다.
 - 타입 검사: `pnpm.cmd typecheck`
 - 빌드: `pnpm.cmd build`
 - 설치/서비스 워커·실기기 GPS·화면 회전·토스·Android·iOS 검증은 자동 검사와 구분해 `progress.md`에 기록한다.

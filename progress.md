@@ -1,6 +1,6 @@
 # mini-apps 전체 진행표
 
-> 앱별 변경 이력·자동 검사·실기기 미검증·다음 작업은 각 앱의 진행표에서 관리한다: [HUD](apps/hud-pwa/progress.md) · [Golf](apps/golf-pwa/progress.md) · [운동 메트로놈](apps/workout-metronome-pwa/progress.md)
+> 앱별 변경 이력·자동 검사·실기기 미검증·다음 작업은 각 앱의 진행표에서 관리한다: [HUD](apps/hud-pwa/progress.md) · [Golf](apps/golf-pwa/progress.md) · [운동 메트로놈 PWA](apps/workout-metronome-pwa/progress.md) · [운동 메트로놈 토스](apps/workout-metronome-toss/progress.md)
 
 ## 상태 기준
 
@@ -15,7 +15,7 @@
 
 | 일정 | 상태 | 현재 결과 | 다음 기준 또는 작업 |
 | --- | --- | --- | --- |
-| ☑ pnpm workspace 및 실행 체계 | 완료 | 세 PWA 패키지와 공통 검사·실행 명령을 구성 | 새 앱·서버 추가 때만 갱신 |
+| ☑ pnpm workspace 및 실행 체계 | 완료 | 세 PWA와 메트로놈 토스 패키지의 공통 검사·실행 명령을 구성 | 새 앱·서버 추가 때만 갱신 |
 | ☑ 프로젝트 지침 및 인수인계 기준 | 완료 | 권리·배포 승인·전 앱의 개발 중 검사→기능 정리 후 PWA 빌드 기준 반영 | 공통 정책 변경 때만 갱신 |
 | ☑ 앱별 운영 문서 분리 | 완료 | 각 앱의 `AGENTS.md`·`progress.md`를 생성 | 이후 상세 변경은 앱 문서에 기록 |
 | ☑ Cloudflare 앱별 빌드 감시 경로 | 완료 | 세 Worker의 앱별 Include paths를 2026-11-03 사용자 제공 설정 화면에서 확인 | 추후 공통 패키지 파일 변경 시 세 Worker 빌드 영향 확인 |
@@ -55,7 +55,7 @@
 | ☑ 메트로놈 PWA 빌드 검증 | 완료 | 타입·단위 검사, PWA 빌드·서비스 워커 생성, 로컬 미리보기 HTTP 확인 | 설치·오프라인·실기기 검증은 별도 진행 |
 | ☑ Cloudflare 자동 배포 | 완료 | `mini-apps-workout-metronome` production 연결 완료 | 공개 URL의 PWA 동작 검증 |
 | ☐ PWA 실기기 검증 | 진행 중 | Wake Lock·Media Session·선행 예약 구현 | Android·iOS의 음향·진동·잠금 화면·백그라운드 확인 |
-| ☐ 토스 미니앱 첫 출시 준비 | 미착수 | PWA 제품 범위와 우선순위만 확정 | 공식 SDK·TDS·권한 확인 후 `apps/workout-metronome-toss` 시작 |
+| ☐ 토스 미니앱 첫 출시 준비 | 진행 중 | `apps/workout-metronome-toss` 첫 구현·로컬 검사·`.ait` 생성, 전면형 광고 연동 완료 | Devtools 화면·테스트 ID QR 실기기·운영 광고·업로드 검증 |
 
 ## 향후 플랫폼 일정
 

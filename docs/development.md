@@ -16,7 +16,7 @@ pnpm.cmd typecheck
 pnpm.cmd build
 ```
 
-모든 앱은 반복 개발 중 각자의 Vite 개발 서버에서 화면을 확인하고 해당 앱의 `typecheck`·`test`를 실행한다. 기능을 묶어 정리한 다음 해당 앱의 `build`로 PWA 서비스 워커까지 검증한다. 빌드가 성공하기 전에는 배포 가능한 결과물로 간주하지 않는다. 앱별 실행 명령과 포트는 아래 표를 따른다.
+모든 앱은 반복 개발 중 각자의 Vite 개발 서버에서 화면을 확인하고 해당 앱의 `typecheck`·`test`를 실행한다. 기능을 묶어 정리한 다음 해당 앱의 `build`를 검증한다. PWA는 서비스 워커를, 토스 앱은 별도 `build:ait`로 `.ait` 번들을 확인한다. 빌드 성공을 실기기 동작·업로드·출시 완료로 간주하지 않는다. 앱별 실행 명령과 포트는 아래 표를 따른다.
 
 ## HUD PWA
 
@@ -71,7 +71,7 @@ Build watch include paths: apps/golf-pwa/*, package.json, pnpm-lock.yaml, pnpm-w
 
 인터벌에서는 세부 설정의 `구간 전환 호르라기`를 켤 수 있다. 기본값은 꺼짐이며, 비트 소리가 켜져 있을 때 빠른·회복 구간이 바뀌면 짧은 합성음을 낸다. 첫 구간 시작과 같은 구간에서의 재개에는 울리지 않는다.
 
-실외 운동 화면은 추 왼쪽에 GPS 속도, 오른쪽에 현지 날씨 예보를 표시한다. 날씨는 사용자가 조회 버튼을 누른 뒤 MET Norway Locationforecast API에 대략적 좌표를 전송해 가져오며, GPS 속도·정밀 좌표는 전송하지 않는다. 예보 자료 출처와 CC BY 4.0 라이선스를 화면에 표시한다. 날씨 조회 실패나 위치 미수신은 별도 상태로 보여 준다.
+실외 운동 화면은 추 왼쪽에 GPS 속도, 오른쪽에 현지 날씨 예보를 표시한다. 날씨는 사용자가 조회 버튼을 누른 뒤 MET Norway Locationforecast API에 대략적 좌표를 전송해 가져오며, GPS 속도·정밀 좌표는 전송하지 않는다. 예보 자료 출처와 CC BY 4.0 라이선스는 날씨 도움말에서 확인할 수 있다. 날씨 조회 실패나 위치 미수신은 별도 상태로 보여 준다.
 
 목표 시간이 끝나면 완료 화면에서 환경·설정한 시간·템포 또는 인터벌 구성을 확인하고, 같은 설정으로 다시 시작하거나 홈에서 설정을 바꿀 수 있다. 전면 광고는 향후 토스 미니앱·하이브리드 앱에서 정상 완료 뒤에 검토하며 현재 PWA에는 연동하지 않았다.
 
@@ -89,9 +89,24 @@ Build watch include paths: apps/workout-metronome-pwa/*, package.json, pnpm-lock
 
 대시보드 Worker 이름은 `apps/workout-metronome-pwa/wrangler.jsonc`의 `name`과 같아야 한다. `mini-apps-workout-metronome`의 GitHub Workers Builds production 연결은 완료됐으며, 공개 주소는 `https://mini-apps-workout-metronome.minotree0902.workers.dev`다. 커스텀 도메인·직접 배포·계정 변경은 사용자 승인 후에만 한다.
 
+## 모두의 비트 토스 미니앱
+
+| 목적 | 명령 | 주소 / 상태 |
+| --- | --- | --- |
+| Vite + AIT Devtools | `pnpm.cmd dev:metronome:toss` | `http://127.0.0.1:5182/`; 서버 HTTP 200 확인, Devtools 화면 조작 미검증 |
+| 앱 검사 | `pnpm.cmd --filter @mini-apps/workout-metronome-toss typecheck`, `test`, `build` | 로컬 통과 |
+| Vite 미리보기 | `pnpm.cmd preview:metronome:toss` | `http://127.0.0.1:4182/`; 미실행 |
+| `.ait` 번들 생성 | `pnpm.cmd build:ait:metronome` | `apps/workout-metronome-toss/moduibeat.ait` 생성; `.gitignore`로 제외 |
+| 전면형 광고 테스트 번들 | `pnpm.cmd build:ait:metronome:test` | 공식 테스트 광고 ID만 포함; 콘솔 QR 기기 테스트용 |
+| 전면형 광고 운영 번들 | `pnpm.cmd build:ait:metronome:live` | 사용자 제공 운영 광고 ID만 포함; 테스트 ID 잔존 검사 후 업로드 검토 |
+
+콘솔 appName은 사용자가 등록한 `moduibeat`이고 표시 이름은 `모두의 비트`, 유형은 비게임이다. SDK·Devtools 3.9.0, TDS 2.5.1, React 18.3.1을 사용한다. `apps-in-toss.config.ts`는 위치 접근 권한을 선언한다. 기본 개발 서버와 일반 빌드는 광고를 호출하지 않는다. 전면형 광고는 운동 중 미리 로드하고 목표 시간에 도달한 정상 완료 뒤 한 번만 표시를 시도한다. 광고가 준비되지 않았거나 실패해도 완료 화면을 유지한다. 로컬 Devtools는 SDK 모의 환경이므로 실제 토스 앱의 위치 권한·오디오·광고·날씨 Origin/CORS·안전영역 동작을 입증하지 않는다. `.ait` 업로드·콘솔 QR 테스트·검수·출시는 사용자 명시 승인 후 별도로 진행한다. 토스 앱의 실서비스 Origin은 `https://moduibeat.apps.tossmini.com`, QR 테스트 Origin은 `https://moduibeat.private-apps.tossmini.com`이며 외부 날씨 API의 CORS 허용 여부는 미확인이다.
+
+SDK 개발 흐름은 [토스 WebView 시작 가이드](https://developers-apps-in-toss.toss.im/ai-vibe-coding/tutorials/webview.md)와 설치 패키지 타입을 2026-11-03 확인했다. 토스 SDK 빌드와 TDS 권리 조건은 앱별 `AGENTS.md`·`progress.md`를 따른다.
+
 ## GitHub 및 Cloudflare 자동 배포
 
-현재 원격은 `origin`의 `https://github.com/minotree/mini-app.git`, 배포 브랜치는 `main`이다. HUD·Golf·메트로놈 Worker 모두 이 저장소에 연결되어 있다. 2026-11-03 사용자 제공 Cloudflare 설정 화면 기준, 세 Worker는 각자의 `apps/<app>/*`와 공통 `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`를 감시한다. 앱 폴더만 바뀐 `main` push는 해당 Worker만 빌드하고, 공통 패키지 파일이 바뀌면 세 Worker 모두 빌드한다. 이번 변경 파일을 모두 푸시하면 세 앱 폴더에 각각 변경이 있어 세 Worker 모두 빌드·배포 대상이다. `main` push 전에 변경 내용을 검사한다.
+현재 원격은 `origin`의 `https://github.com/minotree/mini-app.git`, 배포 브랜치는 `main`이다. HUD·Golf·메트로놈 PWA Worker 모두 이 저장소에 연결되어 있다. 2026-11-03 사용자 제공 Cloudflare 설정 화면 기준, 세 Worker는 각자의 `apps/<app>/*`와 공통 `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`를 감시한다. PWA 앱 폴더만 바뀐 `main` push는 해당 Worker만 빌드하고, 공통 패키지 파일이 바뀌면 세 Worker 모두 빌드한다. 토스 패키지는 Cloudflare Worker 배포 대상이 아니다. 이번 토스 패키지 추가로 루트 `package.json`·`pnpm-lock.yaml`이 바뀌었으므로, 이 변경을 `main`에 푸시하면 기존 세 PWA Worker도 빌드 대상이다. `main` push 전에 변경 내용을 검사한다.
 
 HUD와 메트로놈의 감시 경로는 사용자가 Cloudflare 대시보드에서 앱별 경로로 변경했고, 2026-11-03 제공한 설정 화면에서 위 값을 확인했다. 기존 Exclude paths는 유지됐다. Cloudflare OAuth 인증을 사용한 Builds API 호출은 HTTP 403을 반환했으므로 자동 재조회는 수행하지 못했다.
 
@@ -126,7 +141,7 @@ Cloudflare Workers Builds 설정값은 다음을 사용한다. 대시보드 Work
 ## 새 앱 또는 서버 추가 시
 
 1. 앱 이름과 플랫폼을 확정하고 `apps/<이름>-pwa` 또는 해당 플랫폼 패키지를 만든다.
-2. 포트가 필요한 서버는 기존 포트(5173 HUD Vite, 4173 HUD preview, 5180 Golf Vite, 4180 Golf preview, 5181 메트로놈 Vite, 4181 메트로놈 preview, 8787 HUD·8788 Golf·8789 메트로놈 Cloudflare local preview)와 충돌하지 않게 정한다.
+2. 포트가 필요한 서버는 기존 포트(5173 HUD Vite, 4173 HUD preview, 5180 Golf Vite, 4180 Golf preview, 5181 메트로놈 PWA Vite, 4181 PWA preview, 5182 메트로놈 토스 Vite, 4182 토스 preview, 8787 HUD·8788 Golf·8789 메트로놈 Cloudflare local preview)와 충돌하지 않게 정한다.
 3. 루트 `package.json`에 `dev:<앱>`처럼 대상을 드러내는 스크립트를 추가한다.
 4. 이 문서의 표에 실행·미리보기·검사·배포 명령과 포트·검증 상태를 추가한다.
 5. 해당 앱의 `AGENTS.md`와 `progress.md`에 플랫폼 상태·서비스 책임·실제 검증 결과를 기록하고, 루트 문서에는 공통 규칙 또는 전체 상태 변화만 반영한다.
