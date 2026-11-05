@@ -10,6 +10,29 @@ type Page = 'home' | 'workout' | 'complete';
 type Phase = 'idle' | 'count-in' | 'playing';
 type TempoStep = 1 | 5 | 10;
 
+const WORKOUT_RUNTIME_STORAGE_KEY = 'mini-apps.workout-metronome.toss.runtime.v1';
+type WorkoutRuntime = { total: number; remaining: number; endAt: number | null; started: boolean };
+
+const loadWorkoutRuntime = (): WorkoutRuntime | null => {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(WORKOUT_RUNTIME_STORAGE_KEY) ?? 'null');
+    if (!parsed || typeof parsed !== 'object') return null;
+    const value = parsed as Partial<WorkoutRuntime>;
+    if (!Number.isFinite(value.total) || !Number.isFinite(value.remaining) || typeof value.started !== 'boolean') return null;
+    return {
+      total: Math.max(1, Math.round(value.total!)),
+      remaining: Math.max(0, Math.round(value.remaining!)),
+      endAt: typeof value.endAt === 'number' && Number.isFinite(value.endAt) ? value.endAt : null,
+      started: value.started,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const runtimeRemaining = (runtime: WorkoutRuntime, now = Date.now()) =>
+  runtime.endAt === null ? runtime.remaining : Math.max(0, Math.ceil((runtime.endAt - now) / 1000));
+
 const formatTime = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 
 type DeferredNumberInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange' | 'onBlur'> & {
@@ -103,17 +126,20 @@ const playWhistle = (context: AudioContext, nodes: Set<OscillatorNode>) => {
 
 export function App() {
   const [settings, setSettings] = useState<MetronomeSettings>(() => loadSettings(localStorage.getItem(SETTINGS_STORAGE_KEY)));
+  const initialRuntimeRef = useRef<WorkoutRuntime | null>(loadWorkoutRuntime());
+  const initialRuntime = initialRuntimeRef.current;
+  const initialRemaining = initialRuntime ? runtimeRemaining(initialRuntime) : null;
   const [tempoStep, setTempoStep] = useState<TempoStep>(1);
   const [weightDraft, setWeightDraft] = useState(() => settings.weightKg?.toString() ?? '');
-  const [page, setPage] = useState<Page>('home');
+  const [page, setPage] = useState<Page>(() => initialRuntime?.started ? (initialRemaining === 0 ? 'complete' : 'workout') : 'home');
   const [phase, setPhase] = useState<Phase>('idle');
   const [remaining, setRemaining] = useState(() => {
     const savedPlan = intervalPlanFor(settings);
-    return savedPlan ? intervalTotalSeconds(savedPlan) : settings.durationSeconds;
+    return initialRemaining ?? (savedPlan ? intervalTotalSeconds(savedPlan) : settings.durationSeconds);
   });
   const [countIn, setCountIn] = useState(4);
   const [beat, setBeat] = useState(0);
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(() => initialRuntime?.started ?? false);
   const [location, setLocation] = useState<LocationSnapshot | null>(null);
   const [locationError, setLocationError] = useState(false);
   const [locationAttempt, setLocationAttempt] = useState(0);
@@ -130,11 +156,11 @@ export function App() {
   const helpPanelRef = useRef<HTMLDivElement | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
   const nodesRef = useRef(new Set<OscillatorNode>());
-  const elapsedRef = useRef(0);
+  const elapsedRef = useRef(initialRuntime ? Math.max(0, initialRuntime.total - (initialRemaining ?? initialRuntime.remaining)) : 0);
   const startedAtRef = useRef(0);
+  const endAtRef = useRef<number | null>(initialRuntime?.endAt ?? null);
   const intervalKeyRef = useRef<string | null>(null);
   const beatRef = useRef(0);
-  const hiddenAtRef = useRef<number | null>(null);
 
   const plan = intervalPlanFor(settings);
   const total = plan ? intervalTotalSeconds(plan) : settings.durationSeconds;
@@ -146,6 +172,11 @@ export function App() {
   const elapsed = Math.max(0, total - remaining);
   const segment = plan && remaining > 0 ? intervalPosition(plan, elapsed) : null;
   const tempo = segment?.tempo ?? settings.tempo;
+
+  const saveRuntime = (nextRemaining: number, endAt: number | null, nextStarted = true) => {
+    localStorage.setItem(WORKOUT_RUNTIME_STORAGE_KEY, JSON.stringify({ total, remaining: nextRemaining, endAt, started: nextStarted } satisfies WorkoutRuntime));
+  };
+  const clearRuntime = () => localStorage.removeItem(WORKOUT_RUNTIME_STORAGE_KEY);
 
   useEffect(() => { localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)); }, [settings]);
   useEffect(() => {
@@ -162,7 +193,7 @@ export function App() {
     }
   }, [page, started]);
   useEffect(() => {
-    if (page !== 'complete' || !completionAdLoaded || completionAdAttemptedRef.current || !COMPLETION_AD_GROUP_ID || !showFullScreenAd.isSupported()) return;
+    if (page !== 'complete' || !visible || !completionAdLoaded || completionAdAttemptedRef.current || !COMPLETION_AD_GROUP_ID || !showFullScreenAd.isSupported()) return;
     completionAdAttemptedRef.current = true;
     try {
       return showFullScreenAd({
@@ -173,7 +204,7 @@ export function App() {
     } catch (error) {
       console.warn('전면형 광고 표시 실패', error);
     }
-  }, [page, completionAdLoaded]);
+  }, [page, visible, completionAdLoaded]);
   useEffect(() => {
     if (!openHelp) return;
     const closeOutside = (event: PointerEvent) => {
@@ -236,18 +267,32 @@ export function App() {
   useEffect(() => {
     if (phase !== 'count-in') return;
     const timer = window.setTimeout(() => {
-      if (countIn === 1) { setPhase('playing'); startedAtRef.current = Date.now(); setCountIn(0); }
+      if (countIn === 1) {
+        const now = Date.now();
+        startedAtRef.current = now;
+        endAtRef.current = now + remaining * 1000;
+        saveRuntime(remaining, endAtRef.current);
+        setPhase('playing');
+        setCountIn(0);
+      }
       else setCountIn(countIn - 1);
     }, beatIntervalMs(settings.tempo));
     return () => clearTimeout(timer);
-  }, [phase, countIn, settings.tempo]);
+  }, [phase, countIn, settings.tempo, remaining]);
   useEffect(() => {
     if (phase !== 'playing') return;
     const timer = window.setInterval(() => {
-      const nextElapsed = elapsedRef.current + (Date.now() - startedAtRef.current) / 1000;
-      const nextRemaining = Math.max(0, Math.ceil(total - nextElapsed));
+      const nextRemaining = endAtRef.current === null
+        ? Math.max(0, Math.ceil(total - elapsedRef.current - (Date.now() - startedAtRef.current) / 1000))
+        : Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000));
       setRemaining(nextRemaining);
-      if (nextRemaining === 0) { elapsedRef.current = total; setPhase('idle'); setPage('complete'); }
+      if (nextRemaining === 0) {
+        elapsedRef.current = total;
+        endAtRef.current = null;
+        clearRuntime();
+        setPhase('idle');
+        setPage('complete');
+      }
     }, 250);
     return () => clearInterval(timer);
   }, [phase, total]);
@@ -261,22 +306,30 @@ export function App() {
     return () => clearInterval(timer);
   }, [phase, tempo, settings.vibrationEnabled]);
   useEffect(() => {
-    if (phase === 'idle' || !settings.soundEnabled) return;
+    if (phase === 'idle') return;
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') { hiddenAtRef.current = Date.now(); return; }
-      if (contextRef.current && contextRef.current.state !== 'running') {
-        if (phase === 'playing' && hiddenAtRef.current !== null) {
-          elapsedRef.current += (hiddenAtRef.current - startedAtRef.current) / 1000;
-          setRemaining(Math.max(0, Math.ceil(total - elapsedRef.current)));
-        }
+      if (document.visibilityState === 'hidden') return;
+      const nextRemaining = endAtRef.current === null ? remaining : Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000));
+      setRemaining(nextRemaining);
+      if (nextRemaining === 0) {
+        elapsedRef.current = total;
+        endAtRef.current = null;
+        clearRuntime();
+        setPhase('idle');
+        setPage('complete');
+        return;
+      }
+      if (settings.soundEnabled && contextRef.current?.state !== 'running') {
+        elapsedRef.current = total - nextRemaining;
+        endAtRef.current = null;
+        saveRuntime(nextRemaining, null);
         setPhase('idle');
         setAudioError(true);
       }
-      hiddenAtRef.current = null;
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-  }, [phase, settings.soundEnabled, total]);
+  }, [phase, settings.soundEnabled, total, remaining]);
   useEffect(() => {
     const context = contextRef.current;
     if (phase === 'idle' || !settings.soundEnabled || !context) return;
@@ -311,8 +364,30 @@ export function App() {
 
   const update = (patch: Partial<MetronomeSettings>) => setSettings((current) => ({ ...current, ...patch }));
   const pause = () => {
-    if (phase === 'playing') elapsedRef.current += (Date.now() - startedAtRef.current) / 1000;
+    if (phase === 'playing') {
+      const nextRemaining = endAtRef.current === null ? remaining : Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000));
+      elapsedRef.current = total - nextRemaining;
+      endAtRef.current = null;
+      setRemaining(nextRemaining);
+      saveRuntime(nextRemaining, null);
+    }
     setPhase('idle');
+  };
+  const ensureAudioContext = async () => {
+    let context = contextRef.current;
+    if (!context || context.state === 'closed') {
+      context = new AudioContext();
+      contextRef.current = context;
+    }
+    await context.resume();
+    if (context.state !== 'running') {
+      await context.close().catch(() => {});
+      context = new AudioContext();
+      contextRef.current = context;
+      await context.resume();
+    }
+    if (context.state !== 'running') throw new Error(`AudioContext state: ${context.state}`);
+    return context;
   };
   const start = async (fresh = false) => {
     if (phase !== 'idle' || (!fresh && remaining === 0)) return;
@@ -320,26 +395,34 @@ export function App() {
       try {
         const audioSession = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
         if (audioSession) { try { audioSession.type = 'playback'; } catch { /* 지원하지 않으면 기본 오디오 세션 사용 */ } }
-        contextRef.current ??= new AudioContext();
-        await contextRef.current.resume();
+        await ensureAudioContext();
       } catch { setAudioError(true); return; }
     }
     setAudioError(false);
     if (fresh || !started) completionAdAttemptedRef.current = false;
-    if (fresh) { elapsedRef.current = 0; intervalKeyRef.current = null; beatRef.current = 0; setBeat(0); setRemaining(total); }
+    if (fresh) { elapsedRef.current = 0; endAtRef.current = null; intervalKeyRef.current = null; beatRef.current = 0; setBeat(0); setRemaining(total); }
     setPage('workout');
     if ((fresh || !started) && settings.countInEnabled) { setCountIn(4); setPhase('count-in'); }
-    else { startedAtRef.current = Date.now(); setPhase('playing'); }
+    else {
+      const now = Date.now();
+      const nextRemaining = fresh ? total : remaining;
+      startedAtRef.current = now;
+      endAtRef.current = now + nextRemaining * 1000;
+      saveRuntime(nextRemaining, endAtRef.current);
+      setPhase('playing');
+    }
     setStarted(true);
   };
   const reset = () => {
     pause();
     elapsedRef.current = 0;
+    endAtRef.current = null;
     intervalKeyRef.current = null;
     beatRef.current = 0;
     setBeat(0);
     setRemaining(total);
     setStarted(false);
+    clearRuntime();
     setPage('home');
   };
   const setIntervalMode = (mode: IntervalMode) => {
@@ -351,9 +434,8 @@ export function App() {
     update({ beatSound: sound });
     if (!settings.soundEnabled) return;
     try {
-      contextRef.current ??= new AudioContext();
-      await contextRef.current.resume();
-      playBeat(contextRef.current, contextRef.current.currentTime + .04, sound, false, nodesRef.current);
+      const context = await ensureAudioContext();
+      playBeat(context, context.currentTime + .04, sound, false, nodesRef.current);
     } catch {
       setAudioError(true);
     }
