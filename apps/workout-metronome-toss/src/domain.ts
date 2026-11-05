@@ -19,6 +19,7 @@ export const DURATION_LIMITS = { min: 10 * 60, max: 4 * 60 * 60 } as const;
 export const SETTINGS_STORAGE_KEY = 'mini-apps.workout-metronome.toss.settings.v1';
 export type IntervalMode = 'steady' | 'short' | 'balanced' | 'custom';
 export type IntervalPlan = { workSeconds: number; recoverySeconds: number; workTempo: number; recoveryTempo: number; rounds: number };
+export type IntervalEdges = { warmupEnabled: boolean; warmupSeconds: number; warmupTempo: number; cooldownEnabled: boolean; cooldownSeconds: number; cooldownTempo: number };
 export const DEFAULT_INTERVAL_PLAN: IntervalPlan = { workSeconds: 180, recoverySeconds: 120, workTempo: 180, recoveryTempo: 150, rounds: 5 };
 export const INTERVAL_PRESETS: Record<'short' | 'balanced', IntervalPlan> = {
   short: { workSeconds: 60, recoverySeconds: 60, workTempo: 180, recoveryTempo: 150, rounds: 10 },
@@ -34,21 +35,32 @@ export const normalizeIntervalPlan = (value: Partial<IntervalPlan>): IntervalPla
 });
 export const intervalPlanFor = (settings: Pick<MetronomeSettings, 'intervalMode' | 'customInterval'>): IntervalPlan | null =>
   settings.intervalMode === 'steady' ? null : settings.intervalMode === 'custom' ? settings.customInterval : INTERVAL_PRESETS[settings.intervalMode];
-export const intervalTotalSeconds = (plan: IntervalPlan) => (plan.workSeconds + plan.recoverySeconds) * plan.rounds;
-export const estimateCalories = (activity: CalorieActivity | null, weightKg: number | null, durationSeconds: number, plan: IntervalPlan | null): number | null => {
+export const intervalTotalSeconds = (plan: IntervalPlan, edges?: IntervalEdges) =>
+  (plan.workSeconds + plan.recoverySeconds) * plan.rounds
+  + (edges?.warmupEnabled ? edges.warmupSeconds : 0)
+  + (edges?.cooldownEnabled ? edges.cooldownSeconds : 0);
+export const estimateCalories = (activity: CalorieActivity | null, weightKg: number | null, durationSeconds: number, plan: IntervalPlan | null, edges?: IntervalEdges): number | null => {
   if (!activity || weightKg === null || !Number.isFinite(weightKg) || weightKg < 20 || weightKg > 300 || !Number.isFinite(durationSeconds) || durationSeconds <= 0) return null;
   const mets = CALORIE_ACTIVITIES[activity];
   const metMinutes = plan
-    ? (mets.workMet * plan.workSeconds + mets.recoveryMet * plan.recoverySeconds) * plan.rounds / 60
+    ? ((mets.workMet * plan.workSeconds + mets.recoveryMet * plan.recoverySeconds) * plan.rounds
+      + mets.recoveryMet * ((edges?.warmupEnabled ? edges.warmupSeconds : 0) + (edges?.cooldownEnabled ? edges.cooldownSeconds : 0))) / 60
     : mets.steadyMet * durationSeconds / 60;
   return Math.round(metMinutes * 3.5 * weightKg / 200);
 };
 export const shouldPlayIntervalCue = (previous: string | null, current: string): boolean => previous !== null && previous !== current;
-export const intervalPosition = (plan: IntervalPlan, elapsedSeconds: number) => {
+export const intervalPosition = (plan: IntervalPlan, elapsedSeconds: number, edges?: IntervalEdges) => {
+  const warmupSeconds = edges?.warmupEnabled ? edges.warmupSeconds : 0;
+  const cooldownSeconds = edges?.cooldownEnabled ? edges.cooldownSeconds : 0;
+  const total = intervalTotalSeconds(plan, edges);
+  const elapsed = Math.min(Math.max(0, elapsedSeconds), total - 1);
+  if (elapsed < warmupSeconds) return { round: 0, segment: 'warmup' as const, segmentRemaining: warmupSeconds - elapsed, tempo: edges!.warmupTempo };
+  const intervalElapsed = elapsed - warmupSeconds;
+  const intervalSeconds = (plan.workSeconds + plan.recoverySeconds) * plan.rounds;
+  if (intervalElapsed >= intervalSeconds) return { round: plan.rounds, segment: 'cooldown' as const, segmentRemaining: total - elapsed, tempo: edges!.cooldownTempo };
   const cycle = plan.workSeconds + plan.recoverySeconds;
-  const elapsed = Math.min(Math.max(0, elapsedSeconds), intervalTotalSeconds(plan) - 1);
-  const round = Math.floor(elapsed / cycle) + 1;
-  const inCycle = elapsed % cycle;
+  const round = Math.floor(intervalElapsed / cycle) + 1;
+  const inCycle = intervalElapsed % cycle;
   const isWork = inCycle < plan.workSeconds;
   return { round, segment: isWork ? 'work' as const : 'recovery' as const, segmentRemaining: (isWork ? plan.workSeconds : cycle) - inCycle, tempo: isWork ? plan.workTempo : plan.recoveryTempo };
 };
@@ -67,6 +79,12 @@ export type MetronomeSettings = {
   durationSeconds: number;
   intervalMode: IntervalMode;
   customInterval: IntervalPlan;
+  warmupEnabled: boolean;
+  warmupSeconds: number;
+  warmupTempo: number;
+  cooldownEnabled: boolean;
+  cooldownSeconds: number;
+  cooldownTempo: number;
 };
 
 export const DEFAULT_SETTINGS: MetronomeSettings = {
@@ -82,7 +100,13 @@ export const DEFAULT_SETTINGS: MetronomeSettings = {
   countInEnabled: true,
   durationSeconds: 30 * 60,
   intervalMode: 'steady',
-  customInterval: DEFAULT_INTERVAL_PLAN
+  customInterval: DEFAULT_INTERVAL_PLAN,
+  warmupEnabled: true,
+  warmupSeconds: 5 * 60,
+  warmupTempo: 120,
+  cooldownEnabled: true,
+  cooldownSeconds: 5 * 60,
+  cooldownTempo: 100
 };
 
 export const clampTempo = (tempo: number): number => Math.min(TEMPO_LIMITS.max, Math.max(TEMPO_LIMITS.min, Math.round(tempo)));
@@ -111,7 +135,13 @@ export const loadSettings = (raw: string | null): MetronomeSettings => {
       countInEnabled: typeof value.countInEnabled === 'boolean' ? value.countInEnabled : DEFAULT_SETTINGS.countInEnabled,
       durationSeconds: typeof value.durationSeconds === 'number' ? clampDurationSeconds(value.durationSeconds) : DEFAULT_SETTINGS.durationSeconds,
       intervalMode: value.intervalMode === 'short' || value.intervalMode === 'balanced' || value.intervalMode === 'custom' ? value.intervalMode : 'steady',
-      customInterval: value.customInterval && typeof value.customInterval === 'object' ? normalizeIntervalPlan(value.customInterval) : DEFAULT_INTERVAL_PLAN
+      customInterval: value.customInterval && typeof value.customInterval === 'object' ? normalizeIntervalPlan(value.customInterval) : DEFAULT_INTERVAL_PLAN,
+      warmupEnabled: typeof value.warmupEnabled === 'boolean' ? value.warmupEnabled : DEFAULT_SETTINGS.warmupEnabled,
+      warmupSeconds: typeof value.warmupSeconds === 'number' ? clampWhole(value.warmupSeconds, 60, 30 * 60) : DEFAULT_SETTINGS.warmupSeconds,
+      warmupTempo: typeof value.warmupTempo === 'number' ? clampTempo(value.warmupTempo) : DEFAULT_SETTINGS.warmupTempo,
+      cooldownEnabled: typeof value.cooldownEnabled === 'boolean' ? value.cooldownEnabled : DEFAULT_SETTINGS.cooldownEnabled,
+      cooldownSeconds: typeof value.cooldownSeconds === 'number' ? clampWhole(value.cooldownSeconds, 60, 30 * 60) : DEFAULT_SETTINGS.cooldownSeconds,
+      cooldownTempo: typeof value.cooldownTempo === 'number' ? clampTempo(value.cooldownTempo) : DEFAULT_SETTINGS.cooldownTempo
     };
   } catch {
     return DEFAULT_SETTINGS;

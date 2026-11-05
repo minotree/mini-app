@@ -9,6 +9,7 @@ import { parseWeatherForecast, type WeatherForecast } from './weather';
 type Page = 'home' | 'workout' | 'complete';
 type Phase = 'idle' | 'count-in' | 'playing';
 type TempoStep = 1 | 5 | 10;
+type ScreenLockState = 'off' | 'requesting' | 'active' | 'unavailable';
 
 const WORKOUT_RUNTIME_STORAGE_KEY = 'mini-apps.workout-metronome.toss.runtime.v1';
 type WorkoutRuntime = { total: number; remaining: number; endAt: number | null; started: boolean };
@@ -32,6 +33,15 @@ const loadWorkoutRuntime = (): WorkoutRuntime | null => {
 
 const runtimeRemaining = (runtime: WorkoutRuntime, now = Date.now()) =>
   runtime.endAt === null ? runtime.remaining : Math.max(0, Math.ceil((runtime.endAt - now) / 1000));
+
+const intervalEdgesFor = (settings: MetronomeSettings) => ({
+  warmupEnabled: settings.warmupEnabled,
+  warmupSeconds: settings.warmupSeconds,
+  warmupTempo: settings.warmupTempo,
+  cooldownEnabled: settings.cooldownEnabled,
+  cooldownSeconds: settings.cooldownSeconds,
+  cooldownTempo: settings.cooldownTempo,
+});
 
 const formatTime = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 
@@ -112,16 +122,18 @@ const playWhistle = (context: AudioContext, nodes: Set<OscillatorNode>) => {
   const gain = context.createGain();
   const at = context.currentTime + .02;
   oscillator.frequency.setValueAtTime(900, at);
-  oscillator.frequency.exponentialRampToValueAtTime(1500, at + .1);
-  oscillator.frequency.exponentialRampToValueAtTime(1050, at + .23);
+  oscillator.frequency.exponentialRampToValueAtTime(1600, at + .12);
+  oscillator.frequency.exponentialRampToValueAtTime(1350, at + .38);
+  oscillator.frequency.exponentialRampToValueAtTime(1050, at + .58);
   gain.gain.setValueAtTime(.0001, at);
   gain.gain.exponentialRampToValueAtTime(.12, at + .025);
-  gain.gain.exponentialRampToValueAtTime(.0001, at + .25);
+  gain.gain.setValueAtTime(.12, at + .42);
+  gain.gain.exponentialRampToValueAtTime(.0001, at + .62);
   oscillator.connect(gain).connect(context.destination);
   nodes.add(oscillator);
   oscillator.onended = () => nodes.delete(oscillator);
   oscillator.start(at);
-  oscillator.stop(at + .26);
+  oscillator.stop(at + .64);
 };
 
 export function App() {
@@ -135,7 +147,7 @@ export function App() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [remaining, setRemaining] = useState(() => {
     const savedPlan = intervalPlanFor(settings);
-    return initialRemaining ?? (savedPlan ? intervalTotalSeconds(savedPlan) : settings.durationSeconds);
+    return initialRemaining ?? (savedPlan ? intervalTotalSeconds(savedPlan, intervalEdgesFor(settings)) : settings.durationSeconds);
   });
   const [countIn, setCountIn] = useState(4);
   const [beat, setBeat] = useState(0);
@@ -147,6 +159,7 @@ export function App() {
   const [weather, setWeather] = useState<WeatherForecast | null>(null);
   const [weatherError, setWeatherError] = useState(false);
   const [audioError, setAudioError] = useState(false);
+  const [screenLockState, setScreenLockState] = useState<ScreenLockState>('off');
   const [completionAdLoaded, setCompletionAdLoaded] = useState(false);
   const completionAdAttemptedRef = useRef(false);
   const [visible, setVisible] = useState(() => document.visibilityState === 'visible');
@@ -156,27 +169,69 @@ export function App() {
   const helpPanelRef = useRef<HTMLDivElement | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
   const nodesRef = useRef(new Set<OscillatorNode>());
+  const screenWakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const screenWakeLockRequestingRef = useRef(false);
+  const screenLockGenerationRef = useRef(0);
   const elapsedRef = useRef(initialRuntime ? Math.max(0, initialRuntime.total - (initialRemaining ?? initialRuntime.remaining)) : 0);
   const startedAtRef = useRef(0);
   const endAtRef = useRef<number | null>(initialRuntime?.endAt ?? null);
+  const startRemainingRef = useRef(initialRemaining ?? 0);
   const intervalKeyRef = useRef<string | null>(null);
   const beatRef = useRef(0);
 
   const plan = intervalPlanFor(settings);
-  const total = plan ? intervalTotalSeconds(plan) : settings.durationSeconds;
-  const estimatedCalories = estimateCalories(settings.calorieActivity, settings.weightKg, total, plan);
+  const intervalEdges = intervalEdgesFor(settings);
+  const total = plan ? intervalTotalSeconds(plan, intervalEdges) : settings.durationSeconds;
+  const estimatedCalories = estimateCalories(settings.calorieActivity, settings.weightKg, total, plan, intervalEdges);
   const calorieMissingReasons = [
     !settings.calorieActivity ? '운동 종류 미선택' : null,
     settings.weightKg === null ? (weightDraft.trim() ? '몸무게 범위 오류(20~300kg)' : '몸무게 미입력') : null,
   ].filter((reason): reason is string => reason !== null);
   const elapsed = Math.max(0, total - remaining);
-  const segment = plan && remaining > 0 ? intervalPosition(plan, elapsed) : null;
+  const segment = plan && remaining > 0 ? intervalPosition(plan, elapsed, intervalEdges) : null;
   const tempo = segment?.tempo ?? settings.tempo;
+  const countInTempo = plan ? intervalPosition(plan, 0, intervalEdges).tempo : settings.tempo;
 
   const saveRuntime = (nextRemaining: number, endAt: number | null, nextStarted = true) => {
     localStorage.setItem(WORKOUT_RUNTIME_STORAGE_KEY, JSON.stringify({ total, remaining: nextRemaining, endAt, started: nextStarted } satisfies WorkoutRuntime));
   };
   const clearRuntime = () => localStorage.removeItem(WORKOUT_RUNTIME_STORAGE_KEY);
+  const requestScreenWakeLock = async () => {
+    if (!('wakeLock' in navigator)) {
+      setScreenLockState('unavailable');
+      return;
+    }
+    if (screenWakeLockRef.current || screenWakeLockRequestingRef.current) return;
+    screenWakeLockRequestingRef.current = true;
+    setScreenLockState('requesting');
+    const requestGeneration = screenLockGenerationRef.current;
+    try {
+      const sentinel = await navigator.wakeLock.request('screen');
+      if (requestGeneration !== screenLockGenerationRef.current) {
+        await sentinel.release();
+        return;
+      }
+      screenWakeLockRef.current = sentinel;
+      setScreenLockState('active');
+      sentinel.addEventListener('release', () => {
+        if (screenWakeLockRef.current === sentinel) {
+          screenWakeLockRef.current = null;
+          setScreenLockState('off');
+        }
+      });
+    } catch {
+      setScreenLockState('unavailable');
+    } finally {
+      screenWakeLockRequestingRef.current = false;
+    }
+  };
+  const releaseScreenWakeLock = async () => {
+    screenLockGenerationRef.current += 1;
+    const sentinel = screenWakeLockRef.current;
+    screenWakeLockRef.current = null;
+    if (sentinel) await sentinel.release().catch(() => {});
+    setScreenLockState('off');
+  };
 
   useEffect(() => { localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings)); }, [settings]);
   useEffect(() => {
@@ -236,6 +291,18 @@ export function App() {
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
   useEffect(() => {
+    if (phase === 'idle') {
+      void releaseScreenWakeLock();
+      return;
+    }
+    void requestScreenWakeLock();
+    const restoreWhenVisible = () => {
+      if (document.visibilityState === 'visible') void requestScreenWakeLock();
+    };
+    document.addEventListener('visibilitychange', restoreWhenVisible);
+    return () => document.removeEventListener('visibilitychange', restoreWhenVisible);
+  }, [phase]);
+  useEffect(() => {
     if (page !== 'workout' || settings.environment !== 'outdoor') return;
     setLocationError(false);
     try {
@@ -269,16 +336,18 @@ export function App() {
     const timer = window.setTimeout(() => {
       if (countIn === 1) {
         const now = Date.now();
+        const nextRemaining = startRemainingRef.current;
         startedAtRef.current = now;
-        endAtRef.current = now + remaining * 1000;
-        saveRuntime(remaining, endAtRef.current);
+        endAtRef.current = now + nextRemaining * 1000;
+        saveRuntime(nextRemaining, endAtRef.current);
+        setRemaining(nextRemaining);
         setPhase('playing');
         setCountIn(0);
       }
       else setCountIn(countIn - 1);
-    }, beatIntervalMs(settings.tempo));
+    }, beatIntervalMs(countInTempo));
     return () => clearTimeout(timer);
-  }, [phase, countIn, settings.tempo, remaining]);
+  }, [phase, countIn, countInTempo]);
   useEffect(() => {
     if (phase !== 'playing') return;
     const timer = window.setInterval(() => {
@@ -340,7 +409,7 @@ export function App() {
     const schedule = () => {
       if (context.state !== 'running') return;
       while (nextAt < context.currentTime + 20) {
-        const beatTempo = phase === 'count-in' ? settings.tempo : plan ? intervalPosition(plan, baseElapsed + nextAt - baseAt).tempo : settings.tempo;
+        const beatTempo = phase === 'count-in' ? countInTempo : plan ? intervalPosition(plan, baseElapsed + nextAt - baseAt, intervalEdges).tempo : settings.tempo;
         scheduledBeat += 1;
         playBeat(context, nextAt, settings.beatSound, phase === 'playing' && isAccentBeat(scheduledBeat, settings.beatGroup), nodesRef.current);
         nextAt += beatIntervalMs(beatTempo) / 1000;
@@ -353,14 +422,14 @@ export function App() {
       nodesRef.current.forEach((node) => { try { node.stop(); } catch { /* 이미 끝난 비트 */ } });
       nodesRef.current.clear();
     };
-  }, [phase, tempo, settings.soundEnabled, settings.beatSound, settings.beatGroup]);
+  }, [phase, tempo, countInTempo, settings.soundEnabled, settings.beatSound, settings.beatGroup]);
   useEffect(() => {
     if (phase !== 'playing' || !segment) return;
     const key = `${segment.round}:${segment.segment}`;
     if (intervalKeyRef.current && intervalKeyRef.current !== key && settings.whistleEnabled && settings.soundEnabled && contextRef.current?.state === 'running') playWhistle(contextRef.current, nodesRef.current);
     intervalKeyRef.current = key;
   }, [phase, segment?.round, segment?.segment, settings.whistleEnabled, settings.soundEnabled]);
-  useEffect(() => () => { void contextRef.current?.close(); }, []);
+  useEffect(() => () => { void releaseScreenWakeLock(); void contextRef.current?.close(); }, []);
 
   const update = (patch: Partial<MetronomeSettings>) => setSettings((current) => ({ ...current, ...patch }));
   const pause = () => {
@@ -373,8 +442,13 @@ export function App() {
     }
     setPhase('idle');
   };
-  const ensureAudioContext = async () => {
+  const ensureAudioContext = async (forceNew = false) => {
     let context = contextRef.current;
+    if (forceNew && context) {
+      await context.close().catch(() => {});
+      context = null;
+      contextRef.current = null;
+    }
     if (!context || context.state === 'closed') {
       context = new AudioContext();
       contextRef.current = context;
@@ -395,17 +469,18 @@ export function App() {
       try {
         const audioSession = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
         if (audioSession) { try { audioSession.type = 'playback'; } catch { /* 지원하지 않으면 기본 오디오 세션 사용 */ } }
-        await ensureAudioContext();
+        await ensureAudioContext(fresh);
       } catch { setAudioError(true); return; }
     }
     setAudioError(false);
     if (fresh || !started) completionAdAttemptedRef.current = false;
-    if (fresh) { elapsedRef.current = 0; endAtRef.current = null; intervalKeyRef.current = null; beatRef.current = 0; setBeat(0); setRemaining(total); }
+    const nextRemaining = fresh ? total : remaining;
+    startRemainingRef.current = nextRemaining;
+    if (fresh) { elapsedRef.current = 0; endAtRef.current = null; intervalKeyRef.current = null; beatRef.current = 0; setBeat(0); setRemaining(nextRemaining); }
     setPage('workout');
     if ((fresh || !started) && settings.countInEnabled) { setCountIn(4); setPhase('count-in'); }
     else {
       const now = Date.now();
-      const nextRemaining = fresh ? total : remaining;
       startedAtRef.current = now;
       endAtRef.current = now + nextRemaining * 1000;
       saveRuntime(nextRemaining, endAtRef.current);
@@ -427,7 +502,7 @@ export function App() {
   };
   const setIntervalMode = (mode: IntervalMode) => {
     update({ intervalMode: mode });
-    const next = mode === 'steady' ? settings.durationSeconds : intervalTotalSeconds(mode === 'custom' ? settings.customInterval : mode === 'short' ? { workSeconds: 60, recoverySeconds: 60, workTempo: 180, recoveryTempo: 150, rounds: 10 } : { workSeconds: 180, recoverySeconds: 120, workTempo: 180, recoveryTempo: 150, rounds: 5 });
+    const next = mode === 'steady' ? settings.durationSeconds : intervalTotalSeconds(mode === 'custom' ? settings.customInterval : mode === 'short' ? { workSeconds: 60, recoverySeconds: 60, workTempo: 180, recoveryTempo: 150, rounds: 10 } : { workSeconds: 180, recoverySeconds: 120, workTempo: 180, recoveryTempo: 150, rounds: 5 }, intervalEdges);
     setRemaining(next);
   };
   const chooseBeatSound = async (sound: BeatSound) => {
@@ -450,7 +525,20 @@ export function App() {
         <section className="field"><h2>운동 환경 {help('environment')}</h2><div className="choices two">{(['indoor', 'outdoor'] as const).map((mode) => <button key={mode} type="button" className={settings.environment === mode ? 'selected' : ''} onClick={() => update({ environment: mode })}>{mode === 'indoor' ? '실내' : '실외'}</button>)}</div></section>
         <section className="field tempo-field"><h2>템포 {help('tempo')} <span>{settings.tempo} BPM</span></h2><input type="range" aria-label="템포" min="40" max="240" value={settings.tempo} onChange={(event) => update({ tempo: Number(event.target.value) })} /><div className="tempo-adjust"><button type="button" aria-label={`템포 ${tempoStep} BPM 감소`} disabled={settings.tempo <= 40} onClick={() => update({ tempo: clampTempo(settings.tempo - tempoStep) })}>−</button><div className="tempo-steps" role="group" aria-label="템포 증감 단위">{([1, 5, 10] as const).map((step) => <button key={step} type="button" className={tempoStep === step ? 'selected' : ''} aria-pressed={tempoStep === step} onClick={() => setTempoStep(step)}>{step}</button>)}</div><button type="button" aria-label={`템포 ${tempoStep} BPM 증가`} disabled={settings.tempo >= 240} onClick={() => update({ tempo: clampTempo(settings.tempo + tempoStep) })}>+</button></div><div className="choices three">{TEMPO_PRESETS.map((value) => <button key={value} type="button" className={settings.tempo === value ? 'selected' : ''} onClick={() => update({ tempo: value })}>{value}</button>)}</div></section>
         <section className="field"><h2>목표 운동 시간 {help('duration')}{plan && <span>총 {formatTime(total)}</span>}</h2><div className="choices five">{[10, 20, 30, 45, 60].map((minutes) => <button key={minutes} type="button" disabled={started || !!plan} className={settings.durationSeconds === minutes * 60 && !plan ? 'selected' : ''} onClick={() => { update({ durationSeconds: minutes * 60 }); setRemaining(minutes * 60); }}>{minutes}분</button>)}</div></section>
-        <details className="field"><summary>인터벌 {settings.intervalMode === 'steady' ? '사용 안 함' : settings.intervalMode === 'short' ? '짧은 반복' : settings.intervalMode === 'balanced' ? '균형 반복' : '사용자 설정'} {help('interval')}</summary><div className="choices two">{([['steady', '사용 안 함'], ['short', '짧은 반복'], ['balanced', '균형 반복'], ['custom', '사용자 설정']] as const).map(([mode, label]) => <button key={mode} type="button" disabled={started} className={settings.intervalMode === mode ? 'selected' : ''} onClick={() => setIntervalMode(mode)}>{label}</button>)}</div>{plan && <div className="interval-grid">{([['workSeconds', '빠른 구간(초)', 10, 1800], ['workTempo', '빠른 BPM', 40, 240], ['recoverySeconds', '회복 구간(초)', 30, 1800], ['recoveryTempo', '회복 BPM', 40, 240], ['rounds', '반복 횟수', 1, 30]] as const).map(([key, label, min, max]) => <label key={key}><span className="interval-label">{label} <small>{min}~{max}</small></span><DeferredNumberInput min={min} max={max} value={plan[key]} disabled={started || settings.intervalMode !== 'custom'} onCommit={(value) => { const normalized = normalizeIntervalPlan({ ...settings.customInterval, [key]: value }); update({ customInterval: normalized }); setRemaining(intervalTotalSeconds(normalized)); }} /></label>)}</div>}</details>
+        <details className="field"><summary>인터벌 {settings.intervalMode === 'steady' ? '사용 안 함' : settings.intervalMode === 'short' ? '짧은 반복' : settings.intervalMode === 'balanced' ? '균형 반복' : '사용자 설정'} {help('interval')}</summary>
+          <div className="choices two">{([['steady', '사용 안 함'], ['short', '짧은 반복'], ['balanced', '균형 반복'], ['custom', '사용자 설정']] as const).map(([mode, label]) => <button key={mode} type="button" disabled={started} className={settings.intervalMode === mode ? 'selected' : ''} onClick={() => setIntervalMode(mode)}>{label}</button>)}</div>
+          {plan && <>
+            <div className="interval-grid">{([['workSeconds', '빠른 구간(초)', 10, 1800], ['workTempo', '빠른 BPM', 40, 240], ['recoverySeconds', '회복 구간(초)', 30, 1800], ['recoveryTempo', '회복 BPM', 40, 240], ['rounds', '반복 횟수', 1, 30]] as const).map(([key, label, min, max]) => <label key={key}><span className="interval-label">{label} <small>{min}~{max}</small></span><DeferredNumberInput min={min} max={max} value={plan[key]} disabled={started || settings.intervalMode !== 'custom'} onCommit={(value) => { const normalized = normalizeIntervalPlan({ ...settings.customInterval, [key]: value }); update({ customInterval: normalized }); setRemaining(intervalTotalSeconds(normalized, intervalEdges)); }} /></label>)}</div>
+            <div className="interval-grid interval-edges">
+              <label className="check"><span className="interval-label">워밍업 사용</span><input type="checkbox" checked={settings.warmupEnabled} disabled={started} onChange={(event) => { const warmupEnabled = event.target.checked; update({ warmupEnabled }); setRemaining(intervalTotalSeconds(plan, { ...intervalEdges, warmupEnabled })); }} /></label>
+              <label><span className="interval-label">워밍업 시간(분) <small>1~30</small></span><DeferredNumberInput min={1} max={30} value={settings.warmupSeconds / 60} disabled={started || !settings.warmupEnabled} onCommit={(minutes) => { const warmupSeconds = minutes * 60; update({ warmupSeconds }); setRemaining(intervalTotalSeconds(plan, { ...intervalEdges, warmupSeconds })); }} /></label>
+              <label><span className="interval-label">워밍업 BPM <small>40~240</small></span><DeferredNumberInput min={40} max={240} value={settings.warmupTempo} disabled={started || !settings.warmupEnabled} onCommit={(warmupTempo) => update({ warmupTempo })} /></label>
+              <label className="check"><span className="interval-label">쿨다운 사용</span><input type="checkbox" checked={settings.cooldownEnabled} disabled={started} onChange={(event) => { const cooldownEnabled = event.target.checked; update({ cooldownEnabled }); setRemaining(intervalTotalSeconds(plan, { ...intervalEdges, cooldownEnabled })); }} /></label>
+              <label><span className="interval-label">쿨다운 시간(분) <small>1~30</small></span><DeferredNumberInput min={1} max={30} value={settings.cooldownSeconds / 60} disabled={started || !settings.cooldownEnabled} onCommit={(minutes) => { const cooldownSeconds = minutes * 60; update({ cooldownSeconds }); setRemaining(intervalTotalSeconds(plan, { ...intervalEdges, cooldownSeconds })); }} /></label>
+              <label><span className="interval-label">쿨다운 BPM <small>40~240</small></span><DeferredNumberInput min={40} max={240} value={settings.cooldownTempo} disabled={started || !settings.cooldownEnabled} onCommit={(cooldownTempo) => update({ cooldownTempo })} /></label>
+            </div>
+          </>}
+        </details>
         <details className="field calorie-settings"><summary>칼로리 추정 설정 {help('calories')}</summary><p>실제로 한 운동을 선택해 주세요. 입력하지 않아도 메트로놈을 사용할 수 있습니다.</p><label><span>운동 종류</span><select value={settings.calorieActivity ?? ''} onChange={(event) => update({ calorieActivity: (event.target.value || null) as CalorieActivity | null })}><option value="">선택 안 함</option>{Object.entries(CALORIE_ACTIVITIES).map(([key, value]) => <option key={key} value={key}>{value.label}</option>)}</select></label><label><span>몸무게</span><span className="setting-value"><input type="number" inputMode="decimal" min="20" max="300" step="0.1" placeholder="20~300" value={weightDraft} onChange={(event) => { const draft = event.target.value; const weight = Number(draft); setWeightDraft(draft); update({ weightKg: draft !== '' && Number.isFinite(weight) && weight >= 20 && weight <= 300 ? weight : null }); }} /><span>kg</span></span></label><p>20~300kg 입력 시 완료 화면에 추정값을 표시합니다. 값은 이 기기의 브라우저 설정에 저장됩니다.</p></details>
         <details className="field details-settings">
           <summary>세부 설정</summary>
@@ -481,9 +569,10 @@ export function App() {
       <div className="stage">{settings.environment === 'outdoor' && <div className="side-metric"><span>속도</span><strong>{location?.speedKmh ?? '—'}</strong><small>km/h · 참고값</small></div>}<div className={phase === 'playing' ? 'pendulum playing' : 'pendulum'} style={{ '--swing-duration': `${beatIntervalMs(tempo)}ms` } as CSSProperties}><i className="pivot" /><i className="arm"><i className="weight" /></i></div>{settings.environment === 'outdoor' && <div className="side-metric"><span>날씨 {help('weather')}</span><strong>{weather ? `${weather.temperatureC}°` : '—'}</strong><small>{weather?.condition ?? (weatherError ? '조회 실패' : '미조회')}</small></div>}</div>
       {settings.environment === 'outdoor' && <div className="outdoor-info">{locationError ? <button type="button" onClick={() => setLocationAttempt((value) => value + 1)}>위치 권한·수신 다시 시도</button> : !location ? '위치 수신 중' : !weatherAllowed ? <><span>날씨 조회 시 대략적 위치와 IP가 MET Norway에 전달됩니다.</span><button type="button" onClick={() => setWeatherAllowed(true)}>날씨 조회</button></> : null}<details><summary>날씨 정보</summary><p>예보 자료: <a href="https://api.met.no/" target="_blank" rel="noreferrer">MET Norway</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>. 기온과 날씨 상태를 간추려 표시합니다.</p></details></div>}
       <div className="readout"><strong>{tempo}</strong><span>BPM</span></div>
-      {segment && <p className="segment">{segment.segment === 'work' ? '빠른 구간' : '회복 구간'} · {segment.round}/{plan!.rounds}회 · 남은 {formatTime(segment.segmentRemaining)}</p>}
+      {segment && <p className="segment">{segment.segment === 'warmup' ? '워밍업' : segment.segment === 'cooldown' ? '쿨다운' : `${segment.segment === 'work' ? '빠른 구간' : '회복 구간'} · ${segment.round}/${plan!.rounds}회`} · 남은 {formatTime(segment.segmentRemaining)}</p>}
       <p className="remaining">남은 시간 {formatTime(remaining)}</p><p className="beat-state">{phase === 'count-in' ? `시작까지 ${countIn}` : phase === 'playing' ? `박자 ${beat}` : '일시정지됨'}</p>
       <div className="workout-actions"><span className="action-help"><Button onClick={() => void start()} disabled={phase !== 'idle'}>이어하기</Button>{help('start')}</span><span className="action-help"><Button variant="weak" onClick={pause} disabled={phase === 'idle'}>일시정지</Button>{help('pause')}</span><span className="action-help"><Button variant="weak" onClick={reset}>초기화</Button>{help('reset')}</span></div>
+      {phase !== 'idle' && <p className="screen-lock-status">{screenLockState === 'active' ? '화면 켜짐 유지 중' : screenLockState === 'unavailable' ? '화면 켜짐 유지 미지원' : '화면 켜짐 유지 요청 중'}</p>}
       <p className="background-note">화면 잠금·앱 전환 시 소리 재생은 기기와 토스 환경에 따라 중단될 수 있습니다.</p>
     </section>}
     {openHelp && <div ref={helpPanelRef} id="help-panel" className="help-panel" role="status" style={helpPosition ? { ...helpPosition } : { visibility: 'hidden' }}><div><strong>기능 설명</strong><button type="button" onClick={() => setOpenHelp(null)}>닫기</button></div><p>{HELP_TEXT[openHelp]}</p></div>}
@@ -495,7 +584,7 @@ export function App() {
         </div>
         <div className="complete-details">
           <div className="complete-detail-card"><span>운동 종류</span><strong>{settings.calorieActivity ? CALORIE_ACTIVITIES[settings.calorieActivity].label : '미선택'}</strong><small>{settings.environment === 'indoor' ? '실내' : '실외'} 운동</small></div>
-          <div className="complete-detail-card"><span>{plan ? '인터벌 구성' : '리듬 설정'}</span><strong>{plan ? `${plan.rounds}회 반복` : `${settings.tempo} BPM`}</strong><small>{plan ? `빠른 ${formatTime(plan.workSeconds)} · 회복 ${formatTime(plan.recoverySeconds)}` : `박자 ${settings.beatGroup || '적용 안 함'}`}</small></div>
+          <div className="complete-detail-card"><span>{plan ? '인터벌 구성' : '리듬 설정'}</span><strong>{plan ? `${plan.rounds}회 반복` : `${settings.tempo} BPM`}</strong><small>{plan ? `${settings.warmupEnabled ? `워밍업 ${formatTime(settings.warmupSeconds)} · ` : ''}빠른 ${formatTime(plan.workSeconds)} · 회복 ${formatTime(plan.recoverySeconds)}${settings.cooldownEnabled ? ` · 쿨다운 ${formatTime(settings.cooldownSeconds)}` : ''}` : `박자 ${settings.beatGroup || '적용 안 함'}`}</small></div>
         </div>
         {estimatedCalories !== null && <div className="complete-calories"><div><span>추정 소모 칼로리</span><strong>약 {estimatedCalories} kcal</strong></div><small><span>{CALORIE_ACTIVITIES[settings.calorieActivity!].label}의 평균 MET와 설정 시간으로 추정했어요.</span><span>실제 움직임과 강도에 따라 달라질 수 있어요. <a href="https://pacompendium.com/adult-compendium/" target="_blank" rel="noreferrer">MET 자료</a></span></small></div>}
         {estimatedCalories === null && <p className="complete-calorie-unavailable">칼로리 추정값을 표시할 수 없어요: {calorieMissingReasons.join(' · ') || '계산에 필요한 설정을 확인해 주세요'}. 설정에서 입력하면 다음 운동 완료 시 표시됩니다.</p>}
